@@ -1,0 +1,7 @@
+import { and, eq } from 'drizzle-orm';
+import { getDb } from '@/db';
+import { rentals, vehicles } from '@/db/schema';
+import { requireUser } from '@/lib/auth';
+import { fail, ok } from '@/lib/http';
+
+export async function PATCH(request:Request,{params}:{params:Promise<{id:string}>}){try{const user=await requireUser();const{id}=await params;const{action}=await request.json();const db=await getDb();const[row]=await db.select({rental:rentals,companyId:vehicles.companyId}).from(rentals).innerJoin(vehicles,eq(rentals.vehicleId,vehicles.id)).where(eq(rentals.id,Number(id))).limit(1);if(!row)return ok({error:'Rental not found'},404);const rental=row.rental;let status:typeof rental.status;if(user.role==='company'){if(row.companyId!==user.companyId)throw new Error('You cannot manage this rental.');if(action==='confirm'&&rental.status==='pending')status='active';else if(action==='complete'&&rental.status==='active')status='completed';else if(action==='cancel'&&['pending','active'].includes(rental.status))status='cancelled';else throw new Error('This status transition is not allowed.')}else{if(rental.renterId!==user.id||action!=='cancel'||!['pending','active'].includes(rental.status))throw new Error('This rental cannot be cancelled.');status='cancelled'}const[updated]=await db.update(rentals).set({status}).where(and(eq(rentals.id,rental.id),eq(rentals.status,rental.status))).returning();if(!updated)throw new Error('The rental was updated elsewhere. Refresh and try again.');return ok({rental:updated})}catch(error){return fail(error)}}

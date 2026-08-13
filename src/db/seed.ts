@@ -1,0 +1,90 @@
+import bcrypt from 'bcryptjs';
+import { companies, promotionVehicles, promotions, rentals, users, vehicles } from './schema';
+
+const at = (days: number, hour = 10) => {
+  const value = new Date();
+  value.setUTCHours(hour, 0, 0, 0);
+  value.setUTCDate(value.getUTCDate() + days);
+  return value;
+};
+
+export async function seedDatabase(db: any) {
+  const passwordHash = await bcrypt.hash('demo1234', 10);
+  const [city, lux, eco] = await db.insert(companies).values([
+    { name: 'CityDrive Rentals', slug: 'citydrive', logo: 'CD', city: 'San Francisco' },
+    { name: 'LuxWheels Premium', slug: 'luxwheels', logo: 'LW', city: 'Los Angeles' },
+    { name: 'EcoMotion EV', slug: 'ecomotion', logo: 'EM', city: 'San Francisco' },
+  ]).returning();
+
+  const seededUsers = await db.insert(users).values([
+    { name: 'Alex Morgan', email: 'alex@demo.com', passwordHash, role: 'renter', phone: '+1 415 555 0142', avatar: 'AM' },
+    { name: 'Sara Lee', email: 'sara@demo.com', passwordHash, role: 'renter', phone: '+1 628 555 0177', avatar: 'SL' },
+    { name: 'Maya Chen', email: 'maya@demo.com', passwordHash, role: 'renter', phone: '+1 510 555 0130', avatar: 'MC' },
+    { name: 'James Wilson', email: 'james@demo.com', passwordHash, role: 'renter', phone: '+1 707 555 0161', avatar: 'JW' },
+    { name: 'Olivia Martin', email: 'citydrive@demo.com', passwordHash, role: 'company', companyId: city.id, phone: '+1 415 555 0101', avatar: 'OM' },
+    { name: 'Daniel Laurent', email: 'luxwheels@demo.com', passwordHash, role: 'company', companyId: lux.id, phone: '+1 310 555 0102', avatar: 'DL' },
+    { name: 'Nora Green', email: 'ecomotion@demo.com', passwordHash, role: 'company', companyId: eco.id, phone: '+1 650 555 0103', avatar: 'NG' },
+  ]).returning();
+  const [alex, sara, maya, james] = seededUsers;
+
+  const fleet = await db.insert(vehicles).values([
+    { companyId: city.id, make:'Mercedes-Benz', model:'C-Class', year:2025, category:'Luxury sedan', gearbox:'Automatic', fuel:'Hybrid', seats:5, color:'Graphite', licensePlate:'CD-4821', odometer:8420, location:'SoMa, San Francisco', features:['GPS','Heated seats','Apple CarPlay'], image:'/cars/mercedes.jpg', status:'available', hourlyRate:18, dailyRate:139, weeklyRate:829, monthlyRate:2890, rating:4.9 },
+    { companyId: city.id, make:'BMW', model:'5 Series', year:2024, category:'Executive', gearbox:'Automatic', fuel:'Hybrid', seats:5, color:'Midnight blue', licensePlate:'CD-5912', odometer:12780, location:'Financial District', features:['GPS','Premium audio','360° camera'], image:'/cars/bmw.jpg', status:'available', hourlyRate:22, dailyRate:165, weeklyRate:990, monthlyRate:3450, rating:4.9 },
+    { companyId: city.id, make:'Audi', model:'A6', year:2025, category:'Executive', gearbox:'Automatic', fuel:'Hybrid', seats:5, color:'Silver', licensePlate:'CD-7740', odometer:4980, location:'SoMa, San Francisco', features:['Virtual cockpit','Adaptive cruise','CarPlay'], image:'/cars/audi.jpg', status:'available', hourlyRate:21, dailyRate:159, weeklyRate:949, monthlyRate:3290, rating:4.8 },
+    { companyId: city.id, make:'Toyota', model:'Camry', year:2024, category:'Sedan', gearbox:'Automatic', fuel:'Hybrid', seats:5, color:'Pearl white', licensePlate:'CD-1418', odometer:18400, location:'SFO Airport', features:['CarPlay','Lane assist','Keyless entry'], image:'/cars/audi.jpg', status:'maintenance', hourlyRate:12, dailyRate:89, weeklyRate:529, monthlyRate:1840, rating:4.7 },
+    { companyId: city.id, make:'Volvo', model:'XC60', year:2025, category:'Premium SUV', gearbox:'Automatic', fuel:'Hybrid', seats:5, color:'Sage', licensePlate:'CD-6024', odometer:6360, location:'Marina District', features:['Pilot assist','Panoramic roof','Heated seats'], image:'/cars/range-rover.jpg', status:'available', hourlyRate:19, dailyRate:145, weeklyRate:870, monthlyRate:3040, rating:4.9 },
+    { companyId: city.id, make:'Ford', model:'Explorer', year:2023, category:'SUV', gearbox:'Automatic', fuel:'Petrol', seats:7, color:'Black', licensePlate:'CD-8893', odometer:29400, location:'SFO Airport', features:['7 seats','GPS','Blind spot assist'], image:'/cars/range-rover.jpg', status:'retired', hourlyRate:15, dailyRate:115, weeklyRate:689, monthlyRate:2390, rating:4.5 },
+    { companyId: lux.id, make:'Range Rover', model:'Velar', year:2025, category:'Luxury SUV', gearbox:'Automatic', fuel:'Petrol', seats:5, color:'Forest green', licensePlate:'LW-3306', odometer:7420, location:'Beverly Hills', features:['Massage seats','Meridian audio','Panoramic roof'], image:'/cars/range-rover.jpg', status:'available', hourlyRate:29, dailyRate:219, weeklyRate:1310, monthlyRate:4590, rating:4.9 },
+    { companyId: lux.id, make:'Mercedes-Benz', model:'S-Class', year:2025, category:'Luxury sedan', gearbox:'Automatic', fuel:'Hybrid', seats:5, color:'Obsidian', licensePlate:'LW-8145', odometer:5100, location:'West Hollywood', features:['Chauffeur package','Burmester audio','Massage seats'], image:'/cars/mercedes.jpg', status:'available', hourlyRate:34, dailyRate:259, weeklyRate:1549, monthlyRate:5390, rating:5.0 },
+    { companyId: lux.id, make:'BMW', model:'X7', year:2024, category:'Luxury SUV', gearbox:'Automatic', fuel:'Petrol', seats:7, color:'Alpine white', licensePlate:'LW-1039', odometer:11340, location:'LAX Airport', features:['7 seats','Sky lounge','Parking assist'], image:'/cars/bmw.jpg', status:'available', hourlyRate:31, dailyRate:235, weeklyRate:1409, monthlyRate:4890, rating:4.8 },
+    { companyId: lux.id, make:'Porsche', model:'Panamera', year:2025, category:'Performance', gearbox:'Automatic', fuel:'Hybrid', seats:4, color:'Chalk grey', licensePlate:'LW-9114', odometer:3300, location:'Beverly Hills', features:['Sport chrono','BOSE audio','Adaptive suspension'], image:'/cars/audi.jpg', status:'maintenance', hourlyRate:38, dailyRate:289, weeklyRate:1729, monthlyRate:5990, rating:5.0 },
+    { companyId: lux.id, make:'Audi', model:'Q8', year:2024, category:'Luxury SUV', gearbox:'Automatic', fuel:'Petrol', seats:5, color:'Daytona grey', licensePlate:'LW-4480', odometer:15600, location:'Santa Monica', features:['Matrix LED','Bang & Olufsen','Air suspension'], image:'/cars/audi.jpg', status:'available', hourlyRate:28, dailyRate:209, weeklyRate:1250, monthlyRate:4350, rating:4.8 },
+    { companyId: eco.id, make:'Tesla', model:'Model Y', year:2025, category:'Electric SUV', gearbox:'Automatic', fuel:'Electric', seats:5, color:'Pearl white', licensePlate:'EM-1708', odometer:6150, location:'Mission District', features:['Autopilot','Supercharger access','Glass roof'], image:'/cars/tesla.jpg', status:'available', hourlyRate:20, dailyRate:149, weeklyRate:899, monthlyRate:3190, rating:4.9 },
+    { companyId: eco.id, make:'Tesla', model:'Model 3', year:2024, category:'Electric sedan', gearbox:'Automatic', fuel:'Electric', seats:5, color:'Midnight grey', licensePlate:'EM-2264', odometer:19860, location:'Oakland Downtown', features:['Autopilot','Premium connectivity','Glass roof'], image:'/cars/tesla.jpg', status:'available', hourlyRate:17, dailyRate:129, weeklyRate:769, monthlyRate:2690, rating:4.8 },
+    { companyId: eco.id, make:'Polestar', model:'2', year:2025, category:'Electric sedan', gearbox:'Automatic', fuel:'Electric', seats:5, color:'Snow', licensePlate:'EM-7202', odometer:4400, location:'SoMa, San Francisco', features:['Google built-in','Pilot pack','Harman Kardon'], image:'/cars/tesla.jpg', status:'available', hourlyRate:19, dailyRate:145, weeklyRate:869, monthlyRate:3020, rating:4.8 },
+    { companyId: eco.id, make:'Kia', model:'EV9', year:2025, category:'Electric SUV', gearbox:'Automatic', fuel:'Electric', seats:7, color:'Ocean blue', licensePlate:'EM-9009', odometer:2880, location:'SFO Airport', features:['7 seats','Vehicle-to-load','Highway assist'], image:'/cars/tesla.jpg', status:'available', hourlyRate:23, dailyRate:175, weeklyRate:1049, monthlyRate:3650, rating:4.9 },
+    { companyId: eco.id, make:'Hyundai', model:'Ioniq 5', year:2024, category:'Electric SUV', gearbox:'Automatic', fuel:'Electric', seats:5, color:'Digital teal', licensePlate:'EM-5055', odometer:13200, location:'Berkeley', features:['Ultra-fast charging','Vehicle-to-load','Relaxation seats'], image:'/cars/tesla.jpg', status:'maintenance', hourlyRate:16, dailyRate:119, weeklyRate:710, monthlyRate:2480, rating:4.7 },
+    { companyId: eco.id, make:'BMW', model:'i5', year:2025, category:'Electric sedan', gearbox:'Automatic', fuel:'Electric', seats:5, color:'Cape York green', licensePlate:'EM-5501', odometer:3750, location:'Palo Alto', features:['Driving assistant','Harman Kardon','Panoramic roof'], image:'/cars/bmw.jpg', status:'available', hourlyRate:26, dailyRate:195, weeklyRate:1169, monthlyRate:4090, rating:5.0 },
+  ]).returning();
+
+  const promoRows = await db.insert(promotions).values([
+    { companyId: city.id, name:'Summer Escape', code:'SUMMER20', type:'percentage', value:20, appliesTo:'selected', startsAt:at(-20), endsAt:at(28), enabled:true, minQuantity:2, redemptions:34 },
+    { companyId: city.id, name:'Weekly Wander', code:'WEEKLY15', type:'percentage', value:15, appliesTo:'all', startsAt:at(-45), endsAt:at(60), enabled:true, minQuantity:1, redemptions:67 },
+    { companyId: city.id, name:'Welcome Drive', code:'FIRST50', type:'fixed', value:50, appliesTo:'all', startsAt:at(-100), endsAt:at(-10), enabled:true, minQuantity:1, redemptions:93 },
+    { companyId: lux.id, name:'Suite Upgrade', code:'LUXURY10', type:'percentage', value:10, appliesTo:'all', startsAt:at(-5), endsAt:at(45), enabled:true, minQuantity:2, redemptions:21 },
+    { companyId: lux.id, name:'Executive Weekend', code:'EXEC75', type:'fixed', value:75, appliesTo:'selected', startsAt:at(8), endsAt:at(40), enabled:true, minQuantity:2, redemptions:0 },
+    { companyId: eco.id, name:'Electric Summer', code:'ECO25', type:'percentage', value:25, appliesTo:'selected', startsAt:at(-12), endsAt:at(35), enabled:true, minQuantity:3, redemptions:48 },
+    { companyId: eco.id, name:'Green Miles', code:'GREEN12', type:'percentage', value:12, appliesTo:'all', startsAt:at(-30), endsAt:at(70), enabled:false, minQuantity:1, redemptions:16 },
+  ]).returning();
+  await db.insert(promotionVehicles).values([
+    { promotionId: promoRows[0].id, vehicleId: fleet[0].id }, { promotionId: promoRows[0].id, vehicleId: fleet[2].id }, { promotionId: promoRows[0].id, vehicleId: fleet[4].id },
+    { promotionId: promoRows[4].id, vehicleId: fleet[7].id }, { promotionId: promoRows[4].id, vehicleId: fleet[9].id },
+    { promotionId: promoRows[5].id, vehicleId: fleet[11].id }, { promotionId: promoRows[5].id, vehicleId: fleet[12].id }, { promotionId: promoRows[5].id, vehicleId: fleet[13].id },
+  ]);
+
+  await db.insert(rentals).values([
+    { vehicleId:fleet[0].id, renterId:alex.id, status:'active', rateType:'day', quantity:3, startsAt:at(-1,9), endsAt:at(2,9), subtotal:417, discount:62.55, total:354.45, promoCode:'WEEKLY15', pickupLocation:fleet[0].location, createdAt:at(-8) },
+    { vehicleId:fleet[1].id, renterId:sara.id, status:'pending', rateType:'day', quantity:5, startsAt:at(2,11), endsAt:at(7,11), subtotal:825, discount:165, total:660, promoCode:'SUMMER20', pickupLocation:fleet[1].location, createdAt:at(-2) },
+    { vehicleId:fleet[2].id, renterId:maya.id, status:'active', rateType:'hour', quantity:30, startsAt:at(-1,14), endsAt:at(0,20), subtotal:630, discount:126, total:504, promoCode:'SUMMER20', pickupLocation:fleet[2].location, createdAt:at(-5) },
+    { vehicleId:fleet[4].id, renterId:james.id, status:'pending', rateType:'week', quantity:1, startsAt:at(5), endsAt:at(12), subtotal:870, discount:130.5, total:739.5, promoCode:'WEEKLY15', pickupLocation:fleet[4].location, createdAt:at(-1) },
+    { vehicleId:fleet[6].id, renterId:alex.id, status:'pending', rateType:'day', quantity:2, startsAt:at(9), endsAt:at(11), subtotal:438, discount:43.8, total:394.2, promoCode:'LUXURY10', pickupLocation:fleet[6].location, createdAt:at(-2) },
+    { vehicleId:fleet[11].id, renterId:sara.id, status:'active', rateType:'week', quantity:1, startsAt:at(-2), endsAt:at(5), subtotal:899, discount:224.75, total:674.25, promoCode:'ECO25', pickupLocation:fleet[11].location, createdAt:at(-10) },
+    { vehicleId:fleet[12].id, renterId:alex.id, status:'completed', rateType:'day', quantity:3, startsAt:at(-21), endsAt:at(-18), subtotal:387, discount:96.75, total:290.25, promoCode:'ECO25', pickupLocation:fleet[12].location, createdAt:at(-29) },
+    { vehicleId:fleet[3].id, renterId:alex.id, status:'completed', rateType:'week', quantity:1, startsAt:at(-42), endsAt:at(-35), subtotal:529, discount:79.35, total:449.65, promoCode:'WEEKLY15', pickupLocation:fleet[3].location, createdAt:at(-49) },
+    { vehicleId:fleet[7].id, renterId:alex.id, status:'completed', rateType:'day', quantity:2, startsAt:at(-68), endsAt:at(-66), subtotal:518, discount:51.8, total:466.2, promoCode:'LUXURY10', pickupLocation:fleet[7].location, createdAt:at(-74) },
+    { vehicleId:fleet[13].id, renterId:maya.id, status:'completed', rateType:'month', quantity:1, startsAt:at(-96), endsAt:at(-66), subtotal:3020, discount:0, total:3020, pickupLocation:fleet[13].location, createdAt:at(-102) },
+    { vehicleId:fleet[8].id, renterId:sara.id, status:'cancelled', rateType:'day', quantity:1, startsAt:at(-14), endsAt:at(-13), subtotal:235, discount:0, total:235, pickupLocation:fleet[8].location, createdAt:at(-20) },
+    { vehicleId:fleet[14].id, renterId:james.id, status:'completed', rateType:'week', quantity:2, startsAt:at(-125), endsAt:at(-111), subtotal:2098, discount:251.76, total:1846.24, promoCode:'GREEN12', pickupLocation:fleet[14].location, createdAt:at(-130) },
+  ]);
+}
+
+async function run() {
+  if (process.argv[1]?.endsWith('seed.ts')) {
+    const { getDb, resetDatabase } = await import('./index');
+    await resetDatabase();
+    await getDb();
+    console.log('FleetFlow demo data seeded.');
+    process.exit(0);
+  }
+}
+run();
