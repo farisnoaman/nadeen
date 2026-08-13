@@ -69,13 +69,10 @@ async function initialize() {
     store.raw = client;
     try {
       await client.unsafe(`CREATE EXTENSION IF NOT EXISTS btree_gist;
-        DO $$ BEGIN
-          IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'rentals_no_overlap') THEN
-            ALTER TABLE rentals ADD CONSTRAINT rentals_no_overlap EXCLUDE USING gist
-            (vehicle_id WITH =, tstzrange(starts_at, ends_at, '[)') WITH &&)
-            WHERE (status IN ('pending','active'));
-          END IF;
-        END $$;`);
+        ALTER TABLE rentals DROP CONSTRAINT IF EXISTS rentals_no_overlap;
+        ALTER TABLE rentals ADD CONSTRAINT rentals_no_overlap EXCLUDE USING gist
+        (vehicle_id WITH =, tstzrange(starts_at, ends_at + interval '1 hour', '[)') WITH &&)
+        WHERE (status IN ('pending','active'));`);
     } catch (error) { console.warn('Overlap constraint could not be installed automatically:', error); }
   } else {
     const [{ PGlite }, { drizzle }] = await Promise.all([
@@ -89,8 +86,9 @@ async function initialize() {
     store.raw = client;
     try {
       await client.exec(`CREATE EXTENSION IF NOT EXISTS btree_gist;
+        ALTER TABLE rentals DROP CONSTRAINT IF EXISTS rentals_no_overlap;
         ALTER TABLE rentals ADD CONSTRAINT rentals_no_overlap EXCLUDE USING gist
-        (vehicle_id WITH =, tstzrange(starts_at, ends_at, '[)') WITH &&)
+        (vehicle_id WITH =, tstzrange(starts_at, ends_at + interval '1 hour', '[)') WITH &&)
         WHERE (status IN ('pending','active'));`);
     } catch { /* Application overlap guard remains active in embedded preview mode. */ }
   }

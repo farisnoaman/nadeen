@@ -31,6 +31,8 @@ Built with **Next.js 16 (App Router)**, **PostgreSQL**, and **Drizzle ORM**, wit
 - Email/password authentication with bcrypt password hashing and `jose` JWT sessions stored in secure httpOnly cookies.
 - Role-aware renter and company workspaces.
 - Three-layer double-booking protection: application overlap checks, a PostgreSQL `rentals_no_overlap` exclusion constraint, and visible busy periods in the booking experience.
+- A mandatory **one-hour turnaround window** follows every blocking reservation so companies have protected time for inspection, cleaning, maintenance, and fueling.
+- The booking calendar disables reserved dates, highlights turnaround boundaries, and shows the exact maximum available window before the next reservation. Oversized requests return a structured availability suggestion instead of being accepted.
 - Light, dark, and system themes using `next-themes`, persisted across pages without a flash of the wrong theme.
 - English and Arabic localization with server-rendered `<html lang>`/`dir`, a persisted `ff_lang` cookie, full RTL layout, and localized dashboard/auth/marketplace experiences.
 - Skeleton loading, empty states, responsive dialogs, confirmation prompts, toasts, optimistic status updates, and mobile navigation.
@@ -74,7 +76,8 @@ npx drizzle-kit push
 # Recommended database-level overlap guard
 psql "$DATABASE_URL" -c "CREATE EXTENSION IF NOT EXISTS btree_gist;"
 psql "$DATABASE_URL" -c "ALTER TABLE rentals ADD CONSTRAINT rentals_no_overlap \
-  EXCLUDE USING gist (vehicle_id WITH =, tstzrange(starts_at, ends_at, '[)') WITH &&) \
+  EXCLUDE USING gist (vehicle_id WITH =, \
+    tstzrange(starts_at, ends_at + interval '1 hour', '[)') WITH &&) \
   WHERE (status IN ('pending','active'));"
 
 npm run db:seed
@@ -118,6 +121,7 @@ src/
 | `GET /api/vehicles` | Both | Company fleet or renter marketplace |
 | `POST /api/vehicles` | Company | Create vehicle |
 | `GET/PATCH/DELETE /api/vehicles/[id]` | Company / renter read | Details, analytics, edit, status, delete |
+| `GET /api/vehicles/[id]/availability` | Signed in | Busy periods, turnaround windows, and next available limit |
 | `GET/POST /api/promotions` | Company | List and create promotions |
 | `PATCH/DELETE /api/promotions/[id]` | Company | Edit, toggle, or delete promotion |
 | `GET /api/promotions/validate` | Public | Validate a code for a vehicle and price |
