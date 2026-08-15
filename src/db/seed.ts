@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { eq } from 'drizzle-orm';
-import { companies, premiumServices, promotionVehicles, promotions, rentals, rentalServices, users, vehicles } from './schema';
+import { companies, maintenanceItems, maintenanceWorkOrders, notifications, premiumServices, promotionVehicles, promotions, rentals, rentalServices, supportMessages, supportTickets, userSettings, users, vehicles } from './schema';
+import { DEFAULT_MAINTENANCE_ITEMS } from '../lib/maintenance';
 
 const at = (days: number, hour = 10) => {
   const value = new Date();
@@ -26,27 +27,33 @@ export async function seedDatabase(db: any) {
     { name: 'Daniel Laurent', email: 'luxwheels@demo.com', passwordHash, role: 'company', companyId: lux.id, phone: '+1 310 555 0102', avatar: 'DL' },
     { name: 'Nora Green', email: 'ecomotion@demo.com', passwordHash, role: 'company', companyId: eco.id, phone: '+1 650 555 0103', avatar: 'NG' },
   ]).returning();
-  const [alex, sara, maya, james] = seededUsers;
+  const [alex, sara, maya, james, olivia] = seededUsers;
+  await db.insert(userSettings).values(seededUsers.map((user: any) => ({ userId: user.id })));
 
   const fleet = await db.insert(vehicles).values([
-    { companyId: city.id, make:'Mercedes-Benz', model:'C-Class', year:2025, category:'Luxury sedan', gearbox:'Automatic', fuel:'Hybrid', seats:5, color:'Graphite', licensePlate:'CD-4821', odometer:8420, location:'SoMa, San Francisco', features:['GPS','Heated seats','Apple CarPlay'], image:'/cars/mercedes.jpg', status:'available', hourlyRate:18, dailyRate:139, weeklyRate:829, monthlyRate:2890, rating:4.9 },
-    { companyId: city.id, make:'BMW', model:'5 Series', year:2024, category:'Executive', gearbox:'Automatic', fuel:'Hybrid', seats:5, color:'Midnight blue', licensePlate:'CD-5912', odometer:12780, location:'Financial District', features:['GPS','Premium audio','360° camera'], image:'/cars/bmw.jpg', status:'available', hourlyRate:22, dailyRate:165, weeklyRate:990, monthlyRate:3450, rating:4.9 },
-    { companyId: city.id, make:'Audi', model:'A6', year:2025, category:'Executive', gearbox:'Automatic', fuel:'Hybrid', seats:5, color:'Silver', licensePlate:'CD-7740', odometer:4980, location:'SoMa, San Francisco', features:['Virtual cockpit','Adaptive cruise','CarPlay'], image:'/cars/audi.jpg', status:'available', hourlyRate:21, dailyRate:159, weeklyRate:949, monthlyRate:3290, rating:4.8 },
-    { companyId: city.id, make:'Toyota', model:'Camry', year:2024, category:'Sedan', gearbox:'Automatic', fuel:'Hybrid', seats:5, color:'Pearl white', licensePlate:'CD-1418', odometer:18400, location:'SFO Airport', features:['CarPlay','Lane assist','Keyless entry'], image:'/cars/audi.jpg', status:'maintenance', hourlyRate:12, dailyRate:89, weeklyRate:529, monthlyRate:1840, rating:4.7 },
-    { companyId: city.id, make:'Volvo', model:'XC60', year:2025, category:'Premium SUV', gearbox:'Automatic', fuel:'Hybrid', seats:5, color:'Sage', licensePlate:'CD-6024', odometer:6360, location:'Marina District', features:['Pilot assist','Panoramic roof','Heated seats'], image:'/cars/range-rover.jpg', status:'available', hourlyRate:19, dailyRate:145, weeklyRate:870, monthlyRate:3040, rating:4.9 },
-    { companyId: city.id, make:'Ford', model:'Explorer', year:2023, category:'SUV', gearbox:'Automatic', fuel:'Petrol', seats:7, color:'Black', licensePlate:'CD-8893', odometer:29400, location:'SFO Airport', features:['7 seats','GPS','Blind spot assist'], image:'/cars/range-rover.jpg', status:'retired', hourlyRate:15, dailyRate:115, weeklyRate:689, monthlyRate:2390, rating:4.5 },
-    { companyId: lux.id, make:'Range Rover', model:'Velar', year:2025, category:'Luxury SUV', gearbox:'Automatic', fuel:'Petrol', seats:5, color:'Forest green', licensePlate:'LW-3306', odometer:7420, location:'Beverly Hills', features:['Massage seats','Meridian audio','Panoramic roof'], image:'/cars/range-rover.jpg', status:'available', hourlyRate:29, dailyRate:219, weeklyRate:1310, monthlyRate:4590, rating:4.9 },
-    { companyId: lux.id, make:'Mercedes-Benz', model:'S-Class', year:2025, category:'Luxury sedan', gearbox:'Automatic', fuel:'Hybrid', seats:5, color:'Obsidian', licensePlate:'LW-8145', odometer:5100, location:'West Hollywood', features:['Chauffeur package','Burmester audio','Massage seats'], image:'/cars/mercedes.jpg', status:'available', hourlyRate:34, dailyRate:259, weeklyRate:1549, monthlyRate:5390, rating:5.0 },
-    { companyId: lux.id, make:'BMW', model:'X7', year:2024, category:'Luxury SUV', gearbox:'Automatic', fuel:'Petrol', seats:7, color:'Alpine white', licensePlate:'LW-1039', odometer:11340, location:'LAX Airport', features:['7 seats','Sky lounge','Parking assist'], image:'/cars/bmw.jpg', status:'available', hourlyRate:31, dailyRate:235, weeklyRate:1409, monthlyRate:4890, rating:4.8 },
-    { companyId: lux.id, make:'Porsche', model:'Panamera', year:2025, category:'Performance', gearbox:'Automatic', fuel:'Hybrid', seats:4, color:'Chalk grey', licensePlate:'LW-9114', odometer:3300, location:'Beverly Hills', features:['Sport chrono','BOSE audio','Adaptive suspension'], image:'/cars/audi.jpg', status:'maintenance', hourlyRate:38, dailyRate:289, weeklyRate:1729, monthlyRate:5990, rating:5.0 },
-    { companyId: lux.id, make:'Audi', model:'Q8', year:2024, category:'Luxury SUV', gearbox:'Automatic', fuel:'Petrol', seats:5, color:'Daytona grey', licensePlate:'LW-4480', odometer:15600, location:'Santa Monica', features:['Matrix LED','Bang & Olufsen','Air suspension'], image:'/cars/audi.jpg', status:'available', hourlyRate:28, dailyRate:209, weeklyRate:1250, monthlyRate:4350, rating:4.8 },
-    { companyId: eco.id, make:'Tesla', model:'Model Y', year:2025, category:'Electric SUV', gearbox:'Automatic', fuel:'Electric', seats:5, color:'Pearl white', licensePlate:'EM-1708', odometer:6150, location:'Mission District', features:['Autopilot','Supercharger access','Glass roof'], image:'/cars/tesla.jpg', status:'available', hourlyRate:20, dailyRate:149, weeklyRate:899, monthlyRate:3190, rating:4.9 },
-    { companyId: eco.id, make:'Tesla', model:'Model 3', year:2024, category:'Electric sedan', gearbox:'Automatic', fuel:'Electric', seats:5, color:'Midnight grey', licensePlate:'EM-2264', odometer:19860, location:'Oakland Downtown', features:['Autopilot','Premium connectivity','Glass roof'], image:'/cars/tesla.jpg', status:'available', hourlyRate:17, dailyRate:129, weeklyRate:769, monthlyRate:2690, rating:4.8 },
-    { companyId: eco.id, make:'Polestar', model:'2', year:2025, category:'Electric sedan', gearbox:'Automatic', fuel:'Electric', seats:5, color:'Snow', licensePlate:'EM-7202', odometer:4400, location:'SoMa, San Francisco', features:['Google built-in','Pilot pack','Harman Kardon'], image:'/cars/tesla.jpg', status:'available', hourlyRate:19, dailyRate:145, weeklyRate:869, monthlyRate:3020, rating:4.8 },
-    { companyId: eco.id, make:'Kia', model:'EV9', year:2025, category:'Electric SUV', gearbox:'Automatic', fuel:'Electric', seats:7, color:'Ocean blue', licensePlate:'EM-9009', odometer:2880, location:'SFO Airport', features:['7 seats','Vehicle-to-load','Highway assist'], image:'/cars/tesla.jpg', status:'available', hourlyRate:23, dailyRate:175, weeklyRate:1049, monthlyRate:3650, rating:4.9 },
-    { companyId: eco.id, make:'Hyundai', model:'Ioniq 5', year:2024, category:'Electric SUV', gearbox:'Automatic', fuel:'Electric', seats:5, color:'Digital teal', licensePlate:'EM-5055', odometer:13200, location:'Berkeley', features:['Ultra-fast charging','Vehicle-to-load','Relaxation seats'], image:'/cars/tesla.jpg', status:'maintenance', hourlyRate:16, dailyRate:119, weeklyRate:710, monthlyRate:2480, rating:4.7 },
-    { companyId: eco.id, make:'BMW', model:'i5', year:2025, category:'Electric sedan', gearbox:'Automatic', fuel:'Electric', seats:5, color:'Cape York green', licensePlate:'EM-5501', odometer:3750, location:'Palo Alto', features:['Driving assistant','Harman Kardon','Panoramic roof'], image:'/cars/bmw.jpg', status:'available', hourlyRate:26, dailyRate:195, weeklyRate:1169, monthlyRate:4090, rating:5.0 },
+    { companyId: city.id, make:'Mercedes-Benz', model:'C-Class', trim:'C 300', bodyType:'Sedan', drivetrain:'RWD', steeringType:'Left-hand drive', year:2025, category:'Luxury sedan', gearbox:'Automatic', fuel:'Hybrid', seats:5, color:'Graphite', licensePlate:'CD-4821', odometer:8420, location:'SoMa, San Francisco', features:['GPS','Heated seats','Apple CarPlay'], image:'/cars/mercedes.jpg', status:'available', hourlyRate:18, dailyRate:139, weeklyRate:829, monthlyRate:2890, rating:4.9 },
+    { companyId: city.id, make:'BMW', model:'5 Series', trim:'530e', bodyType:'Sedan', drivetrain:'AWD', steeringType:'Left-hand drive', year:2024, category:'Executive', gearbox:'Automatic', fuel:'Hybrid', seats:5, color:'Midnight blue', licensePlate:'CD-5912', odometer:12780, location:'Financial District', features:['GPS','Premium audio','360° camera'], image:'/cars/bmw.jpg', status:'available', hourlyRate:22, dailyRate:165, weeklyRate:990, monthlyRate:3450, rating:4.9 },
+    { companyId: city.id, make:'Audi', model:'A6', trim:'Premium Plus', bodyType:'Sedan', drivetrain:'AWD', steeringType:'Left-hand drive', year:2025, category:'Executive', gearbox:'Automatic', fuel:'Hybrid', seats:5, color:'Silver', licensePlate:'CD-7740', odometer:4980, location:'SoMa, San Francisco', features:['Virtual cockpit','Adaptive cruise','CarPlay'], image:'/cars/audi.jpg', status:'available', hourlyRate:21, dailyRate:159, weeklyRate:949, monthlyRate:3290, rating:4.8 },
+    { companyId: city.id, make:'Toyota', model:'Camry', trim:'XLE', bodyType:'Sedan', drivetrain:'FWD', steeringType:'Left-hand drive', year:2024, category:'Sedan', gearbox:'Automatic', fuel:'Hybrid', seats:5, color:'Pearl white', licensePlate:'CD-1418', odometer:18400, location:'SFO Airport', features:['CarPlay','Lane assist','Keyless entry'], image:'/cars/audi.jpg', status:'maintenance', hourlyRate:12, dailyRate:89, weeklyRate:529, monthlyRate:1840, rating:4.7 },
+    { companyId: city.id, make:'Volvo', model:'XC60', trim:'Ultra', bodyType:'SUV', drivetrain:'AWD', steeringType:'Left-hand drive', year:2025, category:'Premium SUV', gearbox:'Automatic', fuel:'Hybrid', seats:5, color:'Sage', licensePlate:'CD-6024', odometer:6360, location:'Marina District', features:['Pilot assist','Panoramic roof','Heated seats'], image:'/cars/range-rover.jpg', status:'available', hourlyRate:19, dailyRate:145, weeklyRate:870, monthlyRate:3040, rating:4.9 },
+    { companyId: city.id, make:'Ford', model:'Explorer', trim:'Limited', bodyType:'SUV', drivetrain:'AWD', steeringType:'Left-hand drive', year:2023, category:'SUV', gearbox:'Automatic', fuel:'Petrol', seats:7, color:'Black', licensePlate:'CD-8893', odometer:29400, location:'SFO Airport', features:['7 seats','GPS','Blind spot assist'], image:'/cars/range-rover.jpg', status:'retired', hourlyRate:15, dailyRate:115, weeklyRate:689, monthlyRate:2390, rating:4.5 },
+    { companyId: lux.id, make:'Range Rover', model:'Velar', trim:'Dynamic SE', bodyType:'SUV', drivetrain:'AWD', steeringType:'Left-hand drive', year:2025, category:'Luxury SUV', gearbox:'Automatic', fuel:'Petrol', seats:5, color:'Forest green', licensePlate:'LW-3306', odometer:7420, location:'Beverly Hills', features:['Massage seats','Meridian audio','Panoramic roof'], image:'/cars/range-rover.jpg', status:'available', hourlyRate:29, dailyRate:219, weeklyRate:1310, monthlyRate:4590, rating:4.9 },
+    { companyId: lux.id, make:'Mercedes-Benz', model:'S-Class', trim:'S 580e', bodyType:'Sedan', drivetrain:'RWD', steeringType:'Left-hand drive', year:2025, category:'Luxury sedan', gearbox:'Automatic', fuel:'Hybrid', seats:5, color:'Obsidian', licensePlate:'LW-8145', odometer:5100, location:'West Hollywood', features:['Chauffeur package','Burmester audio','Massage seats'], image:'/cars/mercedes.jpg', status:'available', hourlyRate:34, dailyRate:259, weeklyRate:1549, monthlyRate:5390, rating:5.0 },
+    { companyId: lux.id, make:'BMW', model:'X7', trim:'xDrive40i', bodyType:'SUV', drivetrain:'AWD', steeringType:'Left-hand drive', year:2024, category:'Luxury SUV', gearbox:'Automatic', fuel:'Petrol', seats:7, color:'Alpine white', licensePlate:'LW-1039', odometer:11340, location:'LAX Airport', features:['7 seats','Sky lounge','Parking assist'], image:'/cars/bmw.jpg', status:'available', hourlyRate:31, dailyRate:235, weeklyRate:1409, monthlyRate:4890, rating:4.8 },
+    { companyId: lux.id, make:'Porsche', model:'Panamera', trim:'4 E-Hybrid', bodyType:'Hatchback', drivetrain:'AWD', steeringType:'Left-hand drive', year:2025, category:'Performance', gearbox:'Automatic', fuel:'Hybrid', seats:4, color:'Chalk grey', licensePlate:'LW-9114', odometer:3300, location:'Beverly Hills', features:['Sport chrono','BOSE audio','Adaptive suspension'], image:'/cars/audi.jpg', status:'maintenance', hourlyRate:38, dailyRate:289, weeklyRate:1729, monthlyRate:5990, rating:5.0 },
+    { companyId: lux.id, make:'Audi', model:'Q8', trim:'Premium Plus', bodyType:'SUV', drivetrain:'AWD', steeringType:'Left-hand drive', year:2024, category:'Luxury SUV', gearbox:'Automatic', fuel:'Petrol', seats:5, color:'Daytona grey', licensePlate:'LW-4480', odometer:15600, location:'Santa Monica', features:['Matrix LED','Bang & Olufsen','Air suspension'], image:'/cars/audi.jpg', status:'available', hourlyRate:28, dailyRate:209, weeklyRate:1250, monthlyRate:4350, rating:4.8 },
+    { companyId: eco.id, make:'Tesla', model:'Model Y', trim:'Long Range', bodyType:'SUV', drivetrain:'AWD', steeringType:'Left-hand drive', year:2025, category:'Electric SUV', gearbox:'Automatic', fuel:'Electric', seats:5, color:'Pearl white', licensePlate:'EM-1708', odometer:6150, location:'Mission District', features:['Autopilot','Supercharger access','Glass roof'], image:'/cars/tesla.jpg', status:'available', hourlyRate:20, dailyRate:149, weeklyRate:899, monthlyRate:3190, rating:4.9 },
+    { companyId: eco.id, make:'Tesla', model:'Model 3', trim:'Long Range', bodyType:'Sedan', drivetrain:'RWD', steeringType:'Left-hand drive', year:2024, category:'Electric sedan', gearbox:'Automatic', fuel:'Electric', seats:5, color:'Midnight grey', licensePlate:'EM-2264', odometer:19860, location:'Oakland Downtown', features:['Autopilot','Premium connectivity','Glass roof'], image:'/cars/tesla.jpg', status:'available', hourlyRate:17, dailyRate:129, weeklyRate:769, monthlyRate:2690, rating:4.8 },
+    { companyId: eco.id, make:'Polestar', model:'2', trim:'Long Range Dual Motor', bodyType:'Hatchback', drivetrain:'AWD', steeringType:'Left-hand drive', year:2025, category:'Electric sedan', gearbox:'Automatic', fuel:'Electric', seats:5, color:'Snow', licensePlate:'EM-7202', odometer:4400, location:'SoMa, San Francisco', features:['Google built-in','Pilot pack','Harman Kardon'], image:'/cars/tesla.jpg', status:'available', hourlyRate:19, dailyRate:145, weeklyRate:869, monthlyRate:3020, rating:4.8 },
+    { companyId: eco.id, make:'Kia', model:'EV9', trim:'GT-Line', bodyType:'SUV', drivetrain:'AWD', steeringType:'Left-hand drive', year:2025, category:'Electric SUV', gearbox:'Automatic', fuel:'Electric', seats:7, color:'Ocean blue', licensePlate:'EM-9009', odometer:2880, location:'SFO Airport', features:['7 seats','Vehicle-to-load','Highway assist'], image:'/cars/tesla.jpg', status:'available', hourlyRate:23, dailyRate:175, weeklyRate:1049, monthlyRate:3650, rating:4.9 },
+    { companyId: eco.id, make:'Hyundai', model:'Ioniq 5', trim:'Limited', bodyType:'SUV', drivetrain:'RWD', steeringType:'Left-hand drive', year:2024, category:'Electric SUV', gearbox:'Automatic', fuel:'Electric', seats:5, color:'Digital teal', licensePlate:'EM-5055', odometer:13200, location:'Berkeley', features:['Ultra-fast charging','Vehicle-to-load','Relaxation seats'], image:'/cars/tesla.jpg', status:'maintenance', hourlyRate:16, dailyRate:119, weeklyRate:710, monthlyRate:2480, rating:4.7 },
+    { companyId: eco.id, make:'BMW', model:'i5', trim:'M60', bodyType:'Sedan', drivetrain:'AWD', steeringType:'Left-hand drive', year:2025, category:'Electric sedan', gearbox:'Automatic', fuel:'Electric', seats:5, color:'Cape York green', licensePlate:'EM-5501', odometer:3750, location:'Palo Alto', features:['Driving assistant','Harman Kardon','Panoramic roof'], image:'/cars/bmw.jpg', status:'available', hourlyRate:26, dailyRate:195, weeklyRate:1169, monthlyRate:4090, rating:5.0 },
   ]).returning();
+
+  const maintenanceCatalogRows = await db.insert(maintenanceItems).values(
+    [city, lux, eco].flatMap(company => DEFAULT_MAINTENANCE_ITEMS.map(item => ({ ...item, companyId: company.id })))
+  ).returning();
+  const maintenanceItem = (companyId: number, key: string) => maintenanceCatalogRows.find((item: any) => item.companyId === companyId && item.key === key)!;
 
   const serviceRows = await db.insert(premiumServices).values([
     { companyId:city.id, key:'driver', name:'Professional driver', description:'Licensed private driver for local or long-distance travel.', dailyPrice:95, active:true },
@@ -114,6 +121,66 @@ export async function seedDatabase(db: any) {
   await db.update(rentals).set({extrasSubtotal:105,total:765}).where(eq(rentals.id,seededRentals[1].id));
   await db.update(rentals).set({extrasSubtotal:280,total:674.2}).where(eq(rentals.id,seededRentals[4].id));
   await db.update(rentals).set({extrasSubtotal:30,total:320.25}).where(eq(rentals.id,seededRentals[6].id));
+
+  const maintenanceSeed = [
+    { companyId:city.id, vehicleId:fleet[0].id, item:maintenanceItem(city.id,'engine-oil'), status:'completed', priority:'routine', dueAt:at(-42,8), scheduledAt:at(-45,8), durationHours:1.5, completedAt:at(-45,10), completedOdometer:7900, dueOdometer:8000, cost:148, vendor:'Bay Auto Service', notes:'Oil and filter replaced. No leaks found.' },
+    { companyId:city.id, vehicleId:fleet[1].id, item:maintenanceItem(city.id,'engine-oil'), status:'scheduled', priority:'soon', dueAt:at(3,9), scheduledAt:at(1,8), durationHours:1.5, dueOdometer:13000, cost:0, vendor:'CityDrive Workshop', notes:'Must be completed before reservation pickup.' },
+    { companyId:city.id, vehicleId:fleet[2].id, item:maintenanceItem(city.id,'battery'), status:'scheduled', priority:'urgent', dueAt:at(0,18), scheduledAt:at(1,9), durationHours:1, dueOdometer:5200, cost:0, vendor:'CityDrive Workshop', notes:'Vehicle is currently rented; service immediately after protected return.' },
+    { companyId:city.id, vehicleId:fleet[4].id, item:maintenanceItem(city.id,'brakes'), status:'scheduled', priority:'soon', dueAt:at(6,8), scheduledAt:at(4,6), durationHours:2.5, dueOdometer:7000, cost:0, vendor:'Marina Brake Center', notes:'Pre-reservation brake inspection and front pad replacement.' },
+    { companyId:city.id, vehicleId:fleet[3].id, item:maintenanceItem(city.id,'safety-inspection'), status:'scheduled', priority:'urgent', dueAt:at(-2,8), scheduledAt:at(1,11), durationHours:1.5, dueOdometer:19000, cost:0, vendor:'SFO Fleet Workshop', notes:'Overdue roadworthiness inspection.' },
+    { companyId:lux.id, vehicleId:fleet[6].id, item:maintenanceItem(lux.id,'tires'), status:'scheduled', priority:'routine', dueAt:at(18,9), scheduledAt:at(14,9), durationHours:1, dueOdometer:8000, cost:0, vendor:'Beverly Hills Tire', notes:'Rotation, pressure, and alignment check.' },
+    { companyId:lux.id, vehicleId:fleet[7].id, item:maintenanceItem(lux.id,'cabin-filter'), status:'completed', priority:'routine', dueAt:at(-8,9), scheduledAt:at(-10,9), durationHours:1, completedAt:at(-10,10), completedOdometer:5000, dueOdometer:5000, cost:220, vendor:'Mercedes-Benz Service', notes:'Cabin filter replaced and A/C disinfected.' },
+    { companyId:eco.id, vehicleId:fleet[11].id, item:maintenanceItem(eco.id,'tires'), status:'scheduled', priority:'soon', dueAt:at(5,8), scheduledAt:at(6,9), durationHours:1, dueOdometer:6500, cost:0, vendor:'EcoMotion Hub', notes:'Schedule follows active rental return.' },
+    { companyId:eco.id, vehicleId:fleet[12].id, item:maintenanceItem(eco.id,'battery'), status:'scheduled', priority:'routine', dueAt:at(24,9), scheduledAt:at(20,9), durationHours:1, dueOdometer:20500, cost:0, vendor:'EcoMotion Hub', notes:'12V battery and high-voltage health inspection.' },
+  ];
+  await db.insert(maintenanceWorkOrders).values(maintenanceSeed.map((entry:any) => ({
+    companyId:entry.companyId, vehicleId:entry.vehicleId, itemId:entry.item.id,
+    title:entry.item.name, description:entry.item.description, status:entry.status, priority:entry.priority,
+    dueAt:entry.dueAt, dueOdometer:entry.dueOdometer, scheduledAt:entry.scheduledAt,
+    durationHours:entry.durationHours, completedAt:entry.completedAt, completedOdometer:entry.completedOdometer,
+    cost:entry.cost, vendor:entry.vendor, notes:entry.notes,
+    recurrenceDays:entry.item.intervalDays, recurrenceKm:entry.item.intervalKm,
+  })));
+
+  const [sampleTicket] = await db.insert(supportTickets).values({
+    userId: alex.id,
+    companyId: city.id,
+    rentalId: seededRentals[0].id,
+    subject: 'Pickup instructions for my current rental',
+    category: 'booking',
+    priority: 'normal',
+    status: 'waiting',
+    createdAt: at(-1, 8),
+    updatedAt: at(-1, 9),
+  }).returning();
+  await db.insert(supportMessages).values([
+    {
+      ticketId: sampleTicket.id,
+      senderType: 'customer',
+      senderUserId: alex.id,
+      body: 'Could you confirm where I should meet the CityDrive representative for pickup?',
+      createdAt: at(-1, 8),
+      readAt: at(-1, 8),
+    },
+    {
+      ticketId: sampleTicket.id,
+      senderType: 'company',
+      senderUserId: olivia.id,
+      body: 'Thanks for reaching out. Pickup is at the vehicle location shown on your rental bill. We are confirming the exact handover point with CityDrive and will update you here shortly.',
+      automated: false,
+      createdAt: at(-1, 9),
+    },
+  ]);
+  await db.insert(notifications).values({
+    userId: alex.id,
+    type: 'support_reply',
+    body: sampleTicket.subject,
+    href: `/dashboard/support?conversation=${sampleTicket.id}`,
+    entityType: 'support_ticket',
+    entityId: sampleTicket.id,
+    dedupeKey: `support-seed-reply-${sampleTicket.id}`,
+    createdAt: at(-1, 9),
+  });
 }
 
 async function run() {

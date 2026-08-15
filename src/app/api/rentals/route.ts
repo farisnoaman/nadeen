@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import { getDb } from '@/db';
-import { companies, premiumServices, promotionVehicles, promotions, rentals, rentalServices, users, vehicles } from '@/db/schema';
+import { companies, maintenanceWorkOrders, notifications, premiumServices, promotionVehicles, promotions, rentals, rentalServices, users, vehicles } from '@/db/schema';
 import { requireUser } from '@/lib/auth';
 import {
   availabilitySuggestion, findTurnaroundConflict, getBusyPeriods,
@@ -78,13 +78,38 @@ export async function POST(request: Request) {
         ? humanAvailability(suggestion.availableMilliseconds)
         : null;
       return ok({
-        error: suggestion.available
-          ? `Only ${availableText} is available before the next reservation, including the ${TURNAROUND_MINUTES}-minute vehicle turnaround.`
-          : `The vehicle is unavailable at that time. It is next ready at ${suggestion.nextAvailableAt?.toISOString()}.`,
+        error: conflict.source === 'maintenance'
+          ? `The vehicle has protected workshop maintenance at that time. It is next ready at ${suggestion.nextAvailableAt?.toISOString()}.`
+          : suggestion.available
+            ? `Only ${availableText} is available before the next reservation, including the ${TURNAROUND_MINUTES}-minute vehicle turnaround.`
+            : `The vehicle is unavailable at that time. It is next ready at ${suggestion.nextAvailableAt?.toISOString()}.`,
         code: 'RESERVATION_OVERLAP',
         requested: { startsAt, endsAt },
         availability: suggestion,
         conflictingPeriod: serializeBusyPeriod(conflict),
+        turnaroundMinutes: TURNAROUND_MINUTES,
+      }, 409);
+    }
+
+    const maintenancePlans = await db.select().from(maintenanceWorkOrders).where(and(
+      eq(maintenanceWorkOrders.vehicleId, vehicle.id),
+      inArray(maintenanceWorkOrders.status, ['scheduled', 'in_progress']),
+    ));
+    const maintenanceDeadline = maintenancePlans.find((plan: any) => {
+      const dueAt = new Date(plan.dueAt);
+      const workshopEnd = new Date(new Date(plan.scheduledAt).getTime() + Number(plan.durationHours || 1) * 3_600_000);
+      return dueAt <= endsAt && workshopEnd.getTime() > startsAt.getTime() - TURNAROUND_MS;
+    });
+    if (maintenanceDeadline) {
+      return ok({
+        error: `Required maintenance (${maintenanceDeadline.title}) must be completed before this reservation can begin.`,
+        code: 'MAINTENANCE_REQUIRED',
+        maintenance: {
+          id: maintenanceDeadline.id,
+          title: maintenanceDeadline.title,
+          dueAt: maintenanceDeadline.dueAt,
+          scheduledAt: maintenanceDeadline.scheduledAt,
+        },
         turnaroundMinutes: TURNAROUND_MINUTES,
       }, 409);
     }
@@ -144,6 +169,15 @@ export async function POST(request: Request) {
       await db.update(promotions).set({ redemptions: sql`${promotions.redemptions} + 1` })
         .where(eq(promotions.id, promoId));
     }
+    await db.insert(notifications).values({
+      companyId: vehicle.companyId,
+      type: 'rental_created',
+      body: `${user.name} · ${vehicle.make} ${vehicle.model} · FF-${String(row.id).padStart(4, '0')}`,
+      href: '/dashboard/rentals',
+      entityType: 'rental',
+      entityId: row.id,
+      dedupeKey: `rental-created-${row.id}`,
+    });
     return ok({ rental: { ...row, services: savedServices }, turnaroundMinutes: TURNAROUND_MINUTES }, 201);
   } catch (error: any) {
     if (String(error?.message).includes('rentals_no_overlap') || String(error?.message).includes('conflicting key')) {

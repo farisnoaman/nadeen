@@ -1,4 +1,4 @@
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { SignJWT, jwtVerify } from 'jose';
 import { eq } from 'drizzle-orm';
 import { getDb } from '@/db';
@@ -12,24 +12,43 @@ export type SessionUser = {
   companyName: string | null; avatar: string | null;
 };
 
-export async function createSession(user: SessionUser) {
-  const token = await new SignJWT({ ...user }).setProtectedHeader({ alg: 'HS256' }).setIssuedAt().setExpirationTime('7d').sign(secret);
-  const jar = await cookies();
-  jar.set(COOKIE, token, { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', path: '/', maxAge: 60 * 60 * 24 * 7 });
+function sessionCookieOptions(request?: Request) {
+  const origin = request?.headers.get('origin') || '';
+  const forwardedProto = request?.headers.get('x-forwarded-proto') || '';
+  const secure = process.env.NODE_ENV === 'production' || origin.startsWith('https://') || forwardedProto === 'https';
+  return {
+    httpOnly: true, path: '/', secure,
+    sameSite: secure ? 'none' as const : 'lax' as const,
+    partitioned: secure,
+  };
 }
 
-export async function clearSession() {
+export async function createSession(user: SessionUser, request?: Request) {
+  const token = await new SignJWT({ ...user }).setProtectedHeader({ alg: 'HS256' }).setIssuedAt().setExpirationTime('7d').sign(secret);
   const jar = await cookies();
-  jar.set(COOKIE, '', { httpOnly: true, expires: new Date(0), path: '/' });
+  jar.set(COOKIE, token, { ...sessionCookieOptions(request), maxAge: 60 * 60 * 24 * 7 });
+  return token;
+}
+
+export async function clearSession(request?: Request) {
+  const jar = await cookies();
+  jar.set(COOKIE, '', { ...sessionCookieOptions(request), expires: new Date(0) });
 }
 
 export async function getSession(): Promise<SessionUser | null> {
-  try {
-    const token = (await cookies()).get(COOKIE)?.value;
-    if (!token) return null;
-    const { payload } = await jwtVerify(token, secret);
-    return payload as unknown as SessionUser;
-  } catch { return null; }
+  const cookieToken = (await cookies()).get(COOKIE)?.value;
+  const requestHeaders = await headers();
+  const authorization = requestHeaders.get('authorization') || '';
+  const bearerToken = authorization.startsWith('Bearer ') ? authorization.slice(7) : null;
+  const previewToken = requestHeaders.get('x-fleetflow-session');
+  for (const token of [cookieToken, previewToken, bearerToken]) {
+    if (!token) continue;
+    try {
+      const { payload } = await jwtVerify(token, secret);
+      return payload as unknown as SessionUser;
+    } catch { /* Try the next available session transport. */ }
+  }
+  return null;
 }
 
 export async function requireUser(role?: 'renter' | 'company') {

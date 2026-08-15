@@ -13,8 +13,9 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
     const db = await getDb();
     const [row] = await db.select({
       id: vehicles.id, companyId: vehicles.companyId, companyName: companies.name,
-      make: vehicles.make, model: vehicles.model, year: vehicles.year, category: vehicles.category,
-      gearbox: vehicles.gearbox, fuel: vehicles.fuel, seats: vehicles.seats, color: vehicles.color,
+      make: vehicles.make, model: vehicles.model, trim: vehicles.trim, year: vehicles.year, category: vehicles.category,
+      bodyType: vehicles.bodyType, gearbox: vehicles.gearbox, drivetrain: vehicles.drivetrain,
+      steeringType: vehicles.steeringType, fuel: vehicles.fuel, seats: vehicles.seats, color: vehicles.color,
       licensePlate: vehicles.licensePlate, odometer: vehicles.odometer, location: vehicles.location,
       features: vehicles.features, image: vehicles.image, status: vehicles.status,
       hourlyRate: vehicles.hourlyRate, dailyRate: vehicles.dailyRate,
@@ -71,7 +72,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     const body = await request.json();
     const data: any = {};
-    for (const key of ['make', 'model', 'category', 'gearbox', 'fuel', 'color', 'licensePlate', 'location', 'image', 'status']) {
+    for (const key of ['make', 'model', 'trim', 'category', 'bodyType', 'gearbox', 'drivetrain', 'steeringType', 'fuel', 'color', 'licensePlate', 'location', 'image', 'status']) {
       if (body[key] !== undefined) data[key] = key === 'licensePlate' ? String(body[key]).toUpperCase() : body[key];
     }
     for (const key of ['year', 'seats', 'odometer', 'hourlyRate', 'dailyRate', 'weeklyRate', 'monthlyRate']) {

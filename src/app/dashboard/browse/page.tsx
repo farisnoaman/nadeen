@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
-import { ArrowRight, CarFront, Fuel, Gauge, Heart, MapPin, Search, SlidersHorizontal, Star, UserRound, Zap } from 'lucide-react';
+import { ArrowRight, CarFront, Fuel, Gauge, Heart, MapPin, Search, SlidersHorizontal, Star, UserRound, X, Zap } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { BookingModal } from '@/components/booking-modal';
 import { Empty, Skeleton } from '@/components/ui';
@@ -8,4 +9,85 @@ import { api } from '@/lib/client-api';
 import { money } from '@/lib/format';
 import { useI18n } from '@/lib/i18n';
 
-export default function BrowsePage(){const{t}=useI18n();const[vehicles,setVehicles]=useState<any[]>([]);const[loading,setLoading]=useState(true);const[search,setSearch]=useState('');const[category,setCategory]=useState('All');const[gearbox,setGearbox]=useState('All');const[sort,setSort]=useState('price');const[rate,setRate]=useState<'hour'|'day'|'week'|'month'>('day');const[booking,setBooking]=useState<any>(null);useEffect(()=>{api('/vehicles').then((x:any)=>setVehicles(x.vehicles)).finally(()=>setLoading(false))},[]);const fields:any={hour:'hourlyRate',day:'dailyRate',week:'weeklyRate',month:'monthlyRate'};const categories=['All',...new Set(vehicles.map(v=>v.category))];const shown=useMemo(()=>vehicles.filter(v=>(category==='All'||v.category===category)&&(gearbox==='All'||v.gearbox===gearbox)&&`${v.make} ${v.model} ${v.companyName}`.toLowerCase().includes(search.toLowerCase())).sort((a,b)=>sort==='price'?a[fields[rate]]-b[fields[rate]]:b.year-a.year),[vehicles,category,gearbox,search,sort,rate]);return <><section className="browse-hero"><div><span className="eyebrow">{vehicles.length} {t('liveVehicles')}</span><h2>{t('findDrive')}</h2><p>{t('findDriveText')}</p></div><div className="browse-location"><MapPin/><span><small>{t('pickupNear')}</small><strong>San Francisco, CA</strong></span><button><Search/></button></div></section><div className="category-scroll">{categories.map(c=><button className={category===c?'active':''} onClick={()=>setCategory(c)} key={c}>{t(c)}</button>)}</div><div className="market-filter"><label><Search/><input placeholder={t('searchCars')} value={search} onChange={e=>setSearch(e.target.value)}/></label><div><select value={gearbox} onChange={e=>setGearbox(e.target.value)}><option value="All">{t('All')}</option><option value="Automatic">{t('Automatic')}</option><option value="Manual">{t('Manual')}</option></select><select value={sort} onChange={e=>setSort(e.target.value)}><option value="price">{t('priceLow')}</option><option value="year">{t('newest')}</option></select><div className="rate-switch">{(['hour','day','week','month'] as const).map(x=><button className={rate===x?'active':''} onClick={()=>setRate(x)} key={x}>{t(x)}</button>)}</div></div></div>{loading?<Skeleton cards={6}/>:shown.length===0?<Empty icon={CarFront} title={t('noCars')} text={t('tryDifferentFilters')} action={()=>{setCategory('All');setGearbox('All');setSearch('')}} label={t('clearFilters')}/>:<div className="vehicle-grid browse-grid">{shown.map(v=><article className="vehicle-card marketplace-card" key={v.id}><div className="vehicle-photo"><img src={v.image}/><button className="save-car"><Heart/></button><span className="rating-badge"><Star fill="currentColor"/>{v.rating}</span>{v.promotions?.[0]&&<span className="promo-tag"><Zap/>{v.promotions[0].type==='percentage'?`${v.promotions[0].value}% ${t('off')}`:`${money(v.promotions[0].value)} ${t('off')}`}</span>}</div><div className="vehicle-body"><small>{v.companyName}</small><div className="vehicle-title"><div><h3>{v.make} {v.model}</h3><p>{v.year} · {t(v.category)}</p></div></div><div className="car-specs"><span><Fuel/>{t(v.fuel)}</span><span><UserRound/>{v.seats} {t('seats')}</span><span><Gauge/>{t(v.gearbox)}</span></div><footer><span>{t('from')} <strong>{money(v[fields[rate]])}</strong> / {t(rate)}</span><div><Link href={`/dashboard/browse/${v.id}`} className="round-link"><ArrowRight/></Link><button className="btn primary small" onClick={()=>setBooking(v)}>{t('rentNow')}</button></div></footer></div></article>)}</div>}{booking&&<BookingModal vehicle={booking} onClose={()=>setBooking(null)}/>}</>}
+type Rate = 'hour' | 'day' | 'week' | 'month';
+type Filters = {
+  make: string; model: string; trim: string; fuel: string; bodyType: string;
+  gearbox: string; drivetrain: string; steeringType: string; color: string;
+  yearFrom: string; yearTo: string; priceMin: string; priceMax: string;
+};
+const emptyFilters: Filters = { make:'All', model:'All', trim:'All', fuel:'All', bodyType:'All', gearbox:'All', drivetrain:'All', steeringType:'All', color:'All', yearFrom:'', yearTo:'', priceMin:'', priceMax:'' };
+const fields: Record<Rate, string> = { hour:'hourlyRate', day:'dailyRate', week:'weeklyRate', month:'monthlyRate' };
+const unique = (values: string[]) => [...new Set(values.filter(Boolean))].sort((a,b) => a.localeCompare(b));
+
+export default function BrowsePage() {
+  const { t } = useI18n();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const requestedPromotion = searchParams.get('promotion');
+  const requestedCompany = Number(searchParams.get('company'));
+  const [vehicles, setVehicles] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [category, setCategory] = useState('All');
+  const [sort, setSort] = useState('price');
+  const [rate, setRate] = useState<Rate>('day');
+  const [filters, setFilters] = useState<Filters>(emptyFilters);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [booking, setBooking] = useState<any>(null);
+
+  useEffect(() => { api('/vehicles').then((data:any) => setVehicles(data.vehicles)).finally(() => setLoading(false)); }, []);
+  const setFilter = (key: keyof Filters, value: string) => setFilters(current => ({ ...current, [key]: value }));
+  const chooseMake = (make: string) => setFilters(current => ({ ...current, make, model:'All', trim:'All' }));
+  const chooseModel = (model: string) => setFilters(current => ({ ...current, model, trim:'All' }));
+
+  const categories = ['All', ...unique(vehicles.map(vehicle => vehicle.category))];
+  const makes = unique(vehicles.map(vehicle => vehicle.make));
+  const models = unique(vehicles.filter(vehicle => filters.make === 'All' || vehicle.make === filters.make).map(vehicle => vehicle.model));
+  const trims = unique(vehicles.filter(vehicle => (filters.make === 'All' || vehicle.make === filters.make) && (filters.model === 'All' || vehicle.model === filters.model)).map(vehicle => vehicle.trim));
+  const optionValues: Record<string, string[]> = {
+    fuel: unique(vehicles.map(vehicle => vehicle.fuel)), bodyType: unique(vehicles.map(vehicle => vehicle.bodyType)),
+    gearbox: unique(vehicles.map(vehicle => vehicle.gearbox)), drivetrain: unique(vehicles.map(vehicle => vehicle.drivetrain)),
+    steeringType: unique(vehicles.map(vehicle => vehicle.steeringType)), color: unique(vehicles.map(vehicle => vehicle.color)),
+  };
+  const linkedFilter = Boolean(requestedPromotion || requestedCompany);
+  const activeFilters = Object.values(filters).filter(value => value && value !== 'All').length + (linkedFilter ? 1 : 0);
+
+  const shown = useMemo(() => vehicles.filter(vehicle => {
+    const price = Number(vehicle[fields[rate]]);
+    return (!requestedPromotion || vehicle.promotions?.some((promotion: any) => promotion.code === requestedPromotion))
+      && (!requestedCompany || vehicle.companyId === requestedCompany)
+      && (category === 'All' || vehicle.category === category)
+      && (filters.make === 'All' || vehicle.make === filters.make)
+      && (filters.model === 'All' || vehicle.model === filters.model)
+      && (filters.trim === 'All' || vehicle.trim === filters.trim)
+      && (filters.fuel === 'All' || vehicle.fuel === filters.fuel)
+      && (filters.bodyType === 'All' || vehicle.bodyType === filters.bodyType)
+      && (filters.gearbox === 'All' || vehicle.gearbox === filters.gearbox)
+      && (filters.drivetrain === 'All' || vehicle.drivetrain === filters.drivetrain)
+      && (filters.steeringType === 'All' || vehicle.steeringType === filters.steeringType)
+      && (filters.color === 'All' || vehicle.color === filters.color)
+      && (!filters.yearFrom || vehicle.year >= Number(filters.yearFrom))
+      && (!filters.yearTo || vehicle.year <= Number(filters.yearTo))
+      && (!filters.priceMin || price >= Number(filters.priceMin))
+      && (!filters.priceMax || price <= Number(filters.priceMax))
+      && `${vehicle.make} ${vehicle.model} ${vehicle.trim} ${vehicle.companyName}`.toLowerCase().includes(search.toLowerCase());
+  }).sort((a,b) => sort === 'price' ? a[fields[rate]] - b[fields[rate]] : b.year - a.year), [vehicles, category, filters, search, sort, rate, requestedPromotion, requestedCompany]);
+
+  const clearAll = () => { setFilters(emptyFilters); setCategory('All'); setSearch(''); if (linkedFilter) router.replace('/dashboard/browse'); };
+  return <>
+    <section className="browse-hero"><div><span className="eyebrow">{vehicles.length} {t('liveVehicles')}</span><h2>{t('findDrive')}</h2><p>{t('findDriveText')}</p></div><div className="browse-location"><MapPin/><span><small>{t('pickupNear')}</small><strong>San Francisco, CA</strong></span><button><Search/></button></div></section>
+    <div className="category-scroll">{categories.map(item => <button className={category === item ? 'active' : ''} onClick={() => setCategory(item)} key={item}>{t(item)}</button>)}</div>
+    <div className="market-filter"><label><Search/><input placeholder={t('searchCars')} value={search} onChange={event => setSearch(event.target.value)}/></label><div><button className={`btn secondary filter-toggle ${filtersOpen ? 'active' : ''}`} onClick={() => setFiltersOpen(value => !value)}><SlidersHorizontal/>{t('filters')}{activeFilters > 0 && <span>{activeFilters}</span>}</button><select value={sort} onChange={event => setSort(event.target.value)}><option value="price">{t('priceLow')}</option><option value="year">{t('newest')}</option></select><div className="rate-switch">{(['hour','day','week','month'] as Rate[]).map(item => <button className={rate === item ? 'active' : ''} onClick={() => setRate(item)} key={item}>{t(item)}</button>)}</div></div></div>
+    {filtersOpen && <section className="advanced-vehicle-filters panel"><header><div><h3>{t('vehicleFilters')}</h3><p>{t('vehicleFiltersText')}</p></div>{activeFilters > 0 && <button onClick={clearAll}><X/>{t('clearFilters')}</button>}</header><div className="vehicle-filter-grid">
+      <label>{t('make')}<select value={filters.make} onChange={event => chooseMake(event.target.value)}><option value="All">{t('allMakes')}</option>{makes.map(value => <option value={value} key={value}>{value}</option>)}</select></label>
+      <label>{t('model')}<select value={filters.model} onChange={event => chooseModel(event.target.value)} disabled={filters.make === 'All'}><option value="All">{t('allModels')}</option>{models.map(value => <option value={value} key={value}>{value}</option>)}</select></label>
+      <label>{t('trim')}<select value={filters.trim} onChange={event => setFilter('trim', event.target.value)} disabled={filters.model === 'All'}><option value="All">{t('allTrims')}</option>{trims.map(value => <option value={value} key={value}>{value}</option>)}</select></label>
+      {(['fuel','bodyType','gearbox','drivetrain','steeringType','color'] as const).map(key => <label key={key}>{t(key)}<select value={filters[key]} onChange={event => setFilter(key,event.target.value)}><option value="All">{t(`all_${key}`)}</option>{optionValues[key].map(value => <option value={value} key={value}>{t(value)}</option>)}</select></label>)}
+      <fieldset><legend>{t('yearRange')}</legend><input type="number" min="1990" max="2100" placeholder={t('fromYear')} value={filters.yearFrom} onChange={event => setFilter('yearFrom',event.target.value)}/><span>—</span><input type="number" min="1990" max="2100" placeholder={t('toYear')} value={filters.yearTo} onChange={event => setFilter('yearTo',event.target.value)}/></fieldset>
+      <fieldset><legend>{t('estimatedPrice')} · {t(rate)}</legend><input type="number" min="0" placeholder={t('minimumPrice')} value={filters.priceMin} onChange={event => setFilter('priceMin',event.target.value)}/><span>—</span><input type="number" min="0" placeholder={t('maximumPrice')} value={filters.priceMax} onChange={event => setFilter('priceMax',event.target.value)}/></fieldset>
+    </div></section>}
+    <div className="filter-results"><span>{shown.length} {t('vehiclesFound')}</span>{activeFilters > 0 && <button onClick={clearAll}>{t('clearAll')}</button>}</div>
+    {loading ? <Skeleton cards={6}/> : shown.length === 0 ? <Empty icon={CarFront} title={t('noCars')} text={t('tryDifferentFilters')} action={clearAll} label={t('clearFilters')}/> : <div className="vehicle-grid browse-grid">{shown.map(vehicle => <article className="vehicle-card marketplace-card" key={vehicle.id}><div className="vehicle-photo"><img src={vehicle.image}/><button className="save-car"><Heart/></button><span className="rating-badge"><Star fill="currentColor"/>{vehicle.rating}</span>{vehicle.promotions?.[0] && <span className="promo-tag"><Zap/>{vehicle.promotions[0].type === 'percentage' ? `${vehicle.promotions[0].value}% ${t('off')}` : `${money(vehicle.promotions[0].value)} ${t('off')}`}</span>}</div><div className="vehicle-body"><small>{vehicle.companyName}</small><div className="vehicle-title"><div><h3>{vehicle.make} {vehicle.model}</h3><p>{vehicle.year} · {vehicle.trim} · {t(vehicle.bodyType || vehicle.category)}</p></div></div><div className="car-specs"><span><Fuel/>{t(vehicle.fuel)}</span><span><UserRound/>{vehicle.seats} {t('seats')}</span><span><Gauge/>{t(vehicle.gearbox)}</span></div><footer><span>{t('from')} <strong>{money(vehicle[fields[rate]])}</strong> / {t(rate)}</span><div><Link href={`/dashboard/browse/${vehicle.id}`} className="round-link"><ArrowRight/></Link><button className="btn primary small" onClick={() => setBooking(vehicle)}>{t('rentNow')}</button></div></footer></div></article>)}</div>}
+    {booking && <BookingModal vehicle={booking} onClose={() => setBooking(null)}/>}
+  </>;
+}

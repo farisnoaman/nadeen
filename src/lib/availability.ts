@@ -1,5 +1,5 @@
 import { and, asc, eq, inArray } from 'drizzle-orm';
-import { rentals } from '@/db/schema';
+import { maintenanceWorkOrders, rentals } from '@/db/schema';
 
 export const TURNAROUND_MINUTES = 60;
 export const TURNAROUND_MS = TURNAROUND_MINUTES * 60 * 1000;
@@ -9,7 +9,8 @@ export type BusyPeriod = {
   id: number;
   startsAt: Date;
   endsAt: Date;
-  status: 'pending' | 'active';
+  status: 'pending' | 'active' | 'maintenance';
+  source: 'rental' | 'maintenance';
   blockedFrom: Date;
   blockedUntil: Date;
 };
@@ -25,39 +26,64 @@ export async function getBusyPeriods(db: any, vehicleId: number): Promise<BusyPe
     inArray(rentals.status, [...BLOCKING_STATUSES]),
   )).orderBy(asc(rentals.startsAt));
 
-  return rows.map((row: any) => ({
+  const workshopRows = await db.select({
+    id: maintenanceWorkOrders.id,
+    startsAt: maintenanceWorkOrders.scheduledAt,
+    durationHours: maintenanceWorkOrders.durationHours,
+  }).from(maintenanceWorkOrders).where(and(
+    eq(maintenanceWorkOrders.vehicleId, vehicleId),
+    inArray(maintenanceWorkOrders.status, ['scheduled', 'in_progress']),
+  )).orderBy(asc(maintenanceWorkOrders.scheduledAt));
+
+  const rentalPeriods: BusyPeriod[] = rows.map((row: any) => ({
     ...row,
+    source: 'rental',
     blockedFrom: new Date(new Date(row.startsAt).getTime() - TURNAROUND_MS),
     blockedUntil: new Date(new Date(row.endsAt).getTime() + TURNAROUND_MS),
   }));
+  const maintenancePeriods: BusyPeriod[] = workshopRows.map((row: any) => {
+    const startsAt = new Date(row.startsAt);
+    const endsAt = new Date(startsAt.getTime() + Number(row.durationHours || 1) * 3_600_000);
+    return {
+      id: row.id,
+      startsAt,
+      endsAt,
+      status: 'maintenance',
+      source: 'maintenance',
+      blockedFrom: new Date(startsAt.getTime() - TURNAROUND_MS),
+      blockedUntil: new Date(endsAt.getTime() + TURNAROUND_MS),
+    };
+  });
+  return [...rentalPeriods, ...maintenancePeriods]
+    .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
 }
 
 export function findTurnaroundConflict(periods: BusyPeriod[], startsAt: Date, endsAt: Date) {
   return periods.find((period) =>
-    startsAt.getTime() < new Date(period.endsAt).getTime() + TURNAROUND_MS &&
-    endsAt.getTime() + TURNAROUND_MS > new Date(period.startsAt).getTime()
+    startsAt.getTime() < new Date(period.blockedUntil).getTime() &&
+    endsAt.getTime() > new Date(period.blockedFrom).getTime()
   );
 }
 
 export function availabilitySuggestion(periods: BusyPeriod[], startsAt: Date) {
   const startMs = startsAt.getTime();
   const containing = periods.find((period) =>
-    startMs >= new Date(period.startsAt).getTime() - TURNAROUND_MS &&
-    startMs < new Date(period.endsAt).getTime() + TURNAROUND_MS
+    startMs >= new Date(period.blockedFrom).getTime() &&
+    startMs < new Date(period.blockedUntil).getTime()
   );
   if (containing) {
     return {
       available: false,
       availableUntil: null,
-      nextAvailableAt: new Date(new Date(containing.endsAt).getTime() + TURNAROUND_MS),
+      nextAvailableAt: new Date(containing.blockedUntil),
       availableMilliseconds: 0,
       availableCalendarDays: 0,
     };
   }
 
-  const next = periods.find((period) => new Date(period.startsAt).getTime() > startMs);
+  const next = periods.find((period) => new Date(period.blockedFrom).getTime() > startMs);
   const availableUntil = next
-    ? new Date(new Date(next.startsAt).getTime() - TURNAROUND_MS)
+    ? new Date(next.blockedFrom)
     : null;
   const duration = availableUntil ? Math.max(0, availableUntil.getTime() - startMs) : null;
   return {
@@ -84,6 +110,7 @@ export function serializeBusyPeriod(period: BusyPeriod) {
     startsAt: period.startsAt,
     endsAt: period.endsAt,
     status: period.status,
+    source: period.source,
     blockedFrom: period.blockedFrom,
     blockedUntil: period.blockedUntil,
     turnaroundMinutes: TURNAROUND_MINUTES,

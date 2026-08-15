@@ -16,8 +16,10 @@ CREATE TABLE IF NOT EXISTS users (
 );
 CREATE TABLE IF NOT EXISTS vehicles (
   id SERIAL PRIMARY KEY, company_id INTEGER NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
-  make TEXT NOT NULL, model TEXT NOT NULL, year INTEGER NOT NULL, category TEXT NOT NULL,
-  gearbox TEXT NOT NULL DEFAULT 'Automatic', fuel TEXT NOT NULL DEFAULT 'Petrol', seats INTEGER NOT NULL DEFAULT 5,
+  make TEXT NOT NULL, model TEXT NOT NULL, trim TEXT NOT NULL DEFAULT 'Standard', year INTEGER NOT NULL, category TEXT NOT NULL,
+  body_type TEXT NOT NULL DEFAULT 'Sedan', gearbox TEXT NOT NULL DEFAULT 'Automatic',
+  drivetrain TEXT NOT NULL DEFAULT 'FWD', steering_type TEXT NOT NULL DEFAULT 'Left-hand drive',
+  fuel TEXT NOT NULL DEFAULT 'Petrol', seats INTEGER NOT NULL DEFAULT 5,
   color TEXT NOT NULL, license_plate TEXT NOT NULL, odometer INTEGER NOT NULL DEFAULT 0, location TEXT NOT NULL,
   features JSONB NOT NULL DEFAULT '[]'::jsonb, image TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'available' CHECK (status IN ('available','maintenance','retired')),
@@ -25,6 +27,15 @@ CREATE TABLE IF NOT EXISTS vehicles (
   weekly_rate DOUBLE PRECISION NOT NULL, monthly_rate DOUBLE PRECISION NOT NULL,
   rating DOUBLE PRECISION NOT NULL DEFAULT 4.8, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS trim TEXT NOT NULL DEFAULT 'Standard';
+ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS body_type TEXT NOT NULL DEFAULT 'Sedan';
+ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS drivetrain TEXT NOT NULL DEFAULT 'FWD';
+ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS steering_type TEXT NOT NULL DEFAULT 'Left-hand drive';
+UPDATE vehicles SET
+  trim = CASE model WHEN 'C-Class' THEN 'C 300' WHEN '5 Series' THEN '530e' WHEN 'A6' THEN 'Premium Plus' WHEN 'Camry' THEN 'XLE' WHEN 'XC60' THEN 'Ultra' WHEN 'Explorer' THEN 'Limited' WHEN 'Velar' THEN 'Dynamic SE' WHEN 'S-Class' THEN 'S 580e' WHEN 'X7' THEN 'xDrive40i' WHEN 'Panamera' THEN '4 E-Hybrid' WHEN 'Q8' THEN 'Premium Plus' WHEN 'Model Y' THEN 'Long Range' WHEN 'Model 3' THEN 'Long Range' WHEN '2' THEN 'Long Range Dual Motor' WHEN 'EV9' THEN 'GT-Line' WHEN 'Ioniq 5' THEN 'Limited' WHEN 'i5' THEN 'M60' ELSE trim END,
+  body_type = CASE WHEN category ILIKE '%SUV%' OR model IN ('Explorer','X7','Q8','Model Y','EV9','Ioniq 5','XC60','Velar') THEN 'SUV' WHEN model IN ('Panamera','2') THEN 'Hatchback' ELSE 'Sedan' END,
+  drivetrain = CASE WHEN model IN ('C-Class','Camry','S-Class') THEN 'RWD' WHEN model IN ('Model 3','Ioniq 5') THEN 'RWD' WHEN model IN ('5 Series','A6','XC60','Explorer','Velar','X7','Panamera','Q8','Model Y','2','EV9','i5') THEN 'AWD' ELSE drivetrain END
+WHERE trim = 'Standard';
 CREATE INDEX IF NOT EXISTS vehicles_company_idx ON vehicles(company_id);
 CREATE INDEX IF NOT EXISTS vehicles_status_idx ON vehicles(status);
 CREATE TABLE IF NOT EXISTS promotions (
@@ -73,6 +84,96 @@ CREATE TABLE IF NOT EXISTS rental_services (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS rental_services_rental_idx ON rental_services(rental_id);
+CREATE TABLE IF NOT EXISTS support_tickets (
+  id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  company_id INTEGER REFERENCES companies(id) ON DELETE SET NULL,
+  rental_id INTEGER REFERENCES rentals(id) ON DELETE SET NULL, subject TEXT NOT NULL,
+  category TEXT NOT NULL CHECK(category IN ('booking','billing','vehicle','account','technical','other')),
+  priority TEXT NOT NULL DEFAULT 'normal' CHECK(priority IN ('normal','urgent')),
+  status TEXT NOT NULL DEFAULT 'open' CHECK(status IN ('open','waiting','resolved')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE support_tickets ADD COLUMN IF NOT EXISTS company_id INTEGER REFERENCES companies(id) ON DELETE SET NULL;
+UPDATE support_tickets AS ticket SET company_id = vehicle.company_id
+FROM rentals AS rental JOIN vehicles AS vehicle ON vehicle.id = rental.vehicle_id
+WHERE ticket.rental_id = rental.id AND ticket.company_id IS NULL;
+CREATE INDEX IF NOT EXISTS support_tickets_user_idx ON support_tickets(user_id);
+CREATE INDEX IF NOT EXISTS support_tickets_company_idx ON support_tickets(company_id);
+CREATE INDEX IF NOT EXISTS support_tickets_status_idx ON support_tickets(status);
+CREATE TABLE IF NOT EXISTS support_messages (
+  id SERIAL PRIMARY KEY, ticket_id INTEGER NOT NULL REFERENCES support_tickets(id) ON DELETE CASCADE,
+  sender_type TEXT NOT NULL CHECK(sender_type IN ('customer','company','support')),
+  sender_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  body TEXT NOT NULL, automated BOOLEAN NOT NULL DEFAULT FALSE,
+  read_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE support_messages DROP CONSTRAINT IF EXISTS support_messages_sender_type_check;
+ALTER TABLE support_messages ADD CONSTRAINT support_messages_sender_type_check CHECK(sender_type IN ('customer','company','support'));
+CREATE INDEX IF NOT EXISTS support_messages_ticket_idx ON support_messages(ticket_id);
+CREATE INDEX IF NOT EXISTS support_messages_unread_idx ON support_messages(read_at);
+CREATE TABLE IF NOT EXISTS maintenance_items (
+  id SERIAL PRIMARY KEY, company_id INTEGER NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+  key TEXT NOT NULL, name TEXT NOT NULL, description TEXT NOT NULL,
+  interval_days INTEGER, interval_km INTEGER,
+  default_duration_hours DOUBLE PRECISION NOT NULL DEFAULT 1,
+  active BOOLEAN NOT NULL DEFAULT TRUE, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(company_id, key)
+);
+CREATE TABLE IF NOT EXISTS maintenance_work_orders (
+  id SERIAL PRIMARY KEY, company_id INTEGER NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+  vehicle_id INTEGER NOT NULL REFERENCES vehicles(id) ON DELETE CASCADE,
+  item_id INTEGER REFERENCES maintenance_items(id) ON DELETE SET NULL,
+  title TEXT NOT NULL, description TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'scheduled' CHECK(status IN ('scheduled','in_progress','completed','cancelled')),
+  priority TEXT NOT NULL DEFAULT 'routine' CHECK(priority IN ('routine','soon','urgent')),
+  due_at TIMESTAMPTZ NOT NULL, due_odometer INTEGER,
+  scheduled_at TIMESTAMPTZ NOT NULL, duration_hours DOUBLE PRECISION NOT NULL DEFAULT 1,
+  vendor TEXT, cost DOUBLE PRECISION NOT NULL DEFAULT 0, notes TEXT,
+  recurrence_days INTEGER, recurrence_km INTEGER,
+  completed_at TIMESTAMPTZ, completed_odometer INTEGER,
+  waybill_name TEXT, waybill_mime TEXT, waybill_data TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS maintenance_work_orders_company_idx ON maintenance_work_orders(company_id);
+CREATE INDEX IF NOT EXISTS maintenance_work_orders_vehicle_idx ON maintenance_work_orders(vehicle_id);
+CREATE INDEX IF NOT EXISTS maintenance_work_orders_status_idx ON maintenance_work_orders(status);
+CREATE INDEX IF NOT EXISTS maintenance_work_orders_due_idx ON maintenance_work_orders(due_at);
+CREATE TABLE IF NOT EXISTS user_settings (
+  user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  email_notifications BOOLEAN NOT NULL DEFAULT TRUE,
+  in_app_notifications BOOLEAN NOT NULL DEFAULT TRUE,
+  rental_notifications BOOLEAN NOT NULL DEFAULT TRUE,
+  message_notifications BOOLEAN NOT NULL DEFAULT TRUE,
+  billing_notifications BOOLEAN NOT NULL DEFAULT TRUE,
+  marketing_notifications BOOLEAN NOT NULL DEFAULT FALSE,
+  weekly_summary BOOLEAN NOT NULL DEFAULT TRUE,
+  language TEXT NOT NULL DEFAULT 'en' CHECK(language IN ('en','ar')),
+  theme TEXT NOT NULL DEFAULT 'light' CHECK(theme IN ('light','dark')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+INSERT INTO user_settings(user_id)
+SELECT id FROM users
+ON CONFLICT (user_id) DO NOTHING;
+CREATE TABLE IF NOT EXISTS notifications (
+  id SERIAL PRIMARY KEY, user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  company_id INTEGER REFERENCES companies(id) ON DELETE CASCADE,
+  type TEXT NOT NULL CHECK(type IN ('support_message','support_reply','support_status','rental_created','rental_status','billing_updated','maintenance_due','maintenance_overdue','maintenance_conflict','system')),
+  body TEXT NOT NULL, href TEXT NOT NULL, entity_type TEXT, entity_id INTEGER,
+  dedupe_key TEXT UNIQUE, read_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CHECK(user_id IS NOT NULL OR company_id IS NOT NULL)
+);
+ALTER TABLE notifications DROP CONSTRAINT IF EXISTS notifications_type_check;
+ALTER TABLE notifications ADD CONSTRAINT notifications_type_check CHECK(type IN ('support_message','support_reply','support_status','rental_created','rental_status','billing_updated','maintenance_due','maintenance_overdue','maintenance_conflict','system'));
+CREATE INDEX IF NOT EXISTS notifications_user_idx ON notifications(user_id);
+CREATE INDEX IF NOT EXISTS notifications_company_idx ON notifications(company_id);
+CREATE INDEX IF NOT EXISTS notifications_read_idx ON notifications(read_at);
+INSERT INTO notifications(company_id, type, body, href, entity_type, entity_id, dedupe_key, created_at)
+SELECT ticket.company_id, 'support_message', ticket.subject,
+  '/dashboard/support?conversation=' || ticket.id::text, 'support_ticket', ticket.id,
+  'support-ticket-' || ticket.id::text, ticket.updated_at
+FROM support_tickets AS ticket
+WHERE ticket.company_id IS NOT NULL
+ON CONFLICT (dedupe_key) DO NOTHING;
 `;
 
 type Store = { promise?: Promise<any>; db?: any; raw?: any };
@@ -128,6 +229,6 @@ export async function getDb() {
 
 export async function resetDatabase() {
   const db = await getDb();
-  await db.execute(sql.raw('TRUNCATE TABLE promotion_vehicles, rental_services, rentals, premium_services, promotions, vehicles, users, companies RESTART IDENTITY CASCADE'));
+  await db.execute(sql.raw('TRUNCATE TABLE notifications, user_settings, support_messages, support_tickets, maintenance_work_orders, maintenance_items, promotion_vehicles, rental_services, rentals, premium_services, promotions, vehicles, users, companies RESTART IDENTITY CASCADE'));
   await seedDatabase(db);
 }

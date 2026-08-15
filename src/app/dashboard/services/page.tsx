@@ -1,5 +1,6 @@
 'use client';
 import { Baby, BriefcaseBusiness, Check, DollarSign, Plus, Save, Sparkles, Trash2, UserRound, Wifi } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Modal, Skeleton, useToast } from '@/components/ui';
 import { api } from '@/lib/client-api';
@@ -9,10 +10,17 @@ const icons: Record<string, any> = { driver: UserRound, luggage: BriefcaseBusine
 export default function ServicesPage() {
   const toast = useToast();
   const { t } = useI18n();
+  const searchParams = useSearchParams();
+  const requestedService = Number(searchParams.get('service'));
   const [services, setServices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   useEffect(() => { api('/services').then((data: any) => setServices(data.services)).finally(() => setLoading(false)); }, []);
+  useEffect(() => {
+    if (requestedService > 0 && services.some(service => service.id === requestedService)) {
+      requestAnimationFrame(() => document.getElementById(`service-${requestedService}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+    }
+  }, [requestedService, services]);
   const patch = async (service: any, changes: any) => {
     const old = services;
     setServices(rows => rows.map(row => row.id === service.id ? { ...row, ...changes } : row));
@@ -29,16 +37,16 @@ export default function ServicesPage() {
   };
   return <><div className="page-heading"><div><span className="eyebrow"><Sparkles />{t('servicesEyebrow')}</span><h2>{t('premiumServices')}</h2><p>{t('servicesPageText')}</p></div><button className="btn primary" onClick={() => setOpen(true)}><Plus />{t('addService')}</button></div>
     <div className="service-policy"><Sparkles /><div><strong>{t('pricingControlTitle')}</strong><span>{t('pricingControlText')}</span></div></div>
-    {loading ? <Skeleton cards={4} /> : <div className="admin-service-grid">{services.map(service => <ServiceCard key={service.id} service={service} onPatch={patch} onDelete={remove} />)}</div>}
+    {loading ? <Skeleton cards={4} /> : <div className="admin-service-grid">{services.map(service => <ServiceCard key={service.id} service={service} targeted={requestedService === service.id} onPatch={patch} onDelete={remove} />)}</div>}
     <NewService open={open} onClose={() => setOpen(false)} onSaved={(service: any) => { setServices(rows => [...rows, service]); setOpen(false); toast(t('serviceAdded')); }} />
   </>;
 }
-function ServiceCard({ service, onPatch, onDelete }: any) {
+function ServiceCard({ service, targeted, onPatch, onDelete }: any) {
   const { t } = useI18n();
   const Icon = icons[service.key] || Sparkles;
   const [price, setPrice] = useState(service.dailyPrice);
   useEffect(() => setPrice(service.dailyPrice), [service.dailyPrice]);
-  return <article className={`admin-service-card ${service.active ? '' : 'inactive'}`}><header><span><Icon /></span><label className="service-switch"><input type="checkbox" checked={service.active} onChange={event => onPatch(service, { active: event.target.checked })} /><i /></label></header><h3>{t(service.name)}</h3><p>{icons[service.key] ? t(service.key === 'child-seat' ? 'childSeatDescription' : `${service.key}Description`) : service.description}</p><div className="service-price-editor"><label>{t('pricePerServiceDay')}<div><DollarSign /><input type="number" min="0" value={price} onChange={event => setPrice(Number(event.target.value))} /><span>/{t('day')}</span></div></label><button onClick={() => onPatch(service, { dailyPrice: price })}><Save />{t('save')}</button></div><footer><span>{service.active ? <><Check />{t('visibleRenters')}</> : t('servicePaused')}</span><button onClick={() => onDelete(service)}><Trash2 /></button></footer></article>;
+  return <article id={`service-${service.id}`} className={`admin-service-card ${service.active ? '' : 'inactive'} ${targeted ? 'search-target' : ''}`}><header><span><Icon /></span><label className="service-switch"><input type="checkbox" checked={service.active} onChange={event => onPatch(service, { active: event.target.checked })} /><i /></label></header><h3>{t(service.name)}</h3><p>{icons[service.key] ? t(service.key === 'child-seat' ? 'childSeatDescription' : `${service.key}Description`) : service.description}</p><div className="service-price-editor"><label>{t('pricePerServiceDay')}<div><DollarSign /><input type="number" min="0" value={price} onChange={event => setPrice(Number(event.target.value))} /><span>/{t('day')}</span></div></label><button onClick={() => onPatch(service, { dailyPrice: price })}><Save />{t('save')}</button></div><footer><span>{service.active ? <><Check />{t('visibleRenters')}</> : t('servicePaused')}</span><button onClick={() => onDelete(service)}><Trash2 /></button></footer></article>;
 }
 function NewService({ open, onClose, onSaved }: any) {
   const toast = useToast();

@@ -31,16 +31,24 @@ Built with **Next.js 16 (App Router)**, **PostgreSQL**, and **Drizzle ORM**, wit
 - Adjust service days, service price/day, per-service discounts, and an additional bill-wide discount for an individual rental.
 - Issue updated PDF proposals/invoices that are immediately visible in the renter account and shareable through native email/WhatsApp file sharing.
 - Monitor fleet size, pending requests, active rentals, monthly revenue, six-month trends, and utilization from the company overview.
+- Run a preventive-maintenance program with seeded oil, filter, battery, brake, tire, fluid, transmission, ignition, A/C, and safety-inspection tasks.
+- Schedule reservation-safe workshop windows, track due dates and odometer thresholds, record vendors and costs, upload secured waybills, and automatically create the next recurring service.
 
 ### Platform-wide
 
 - Email/password authentication with bcrypt password hashing and `jose` JWT sessions stored in secure httpOnly cookies.
 - Role-aware renter and company workspaces.
+- A keyboard-accessible, role-isolated global search (`⌘/Ctrl + K`) ranks exact, partial, compact-code, and typo-tolerant matches across vehicles, bookings, maintenance, promotions, premium services, support conversations, license plates, customers, prices, and invoice totals.
 - Three-layer double-booking protection: application overlap checks, a PostgreSQL `rentals_no_overlap` exclusion constraint, and visible busy periods in the booking experience.
 - A mandatory **one-hour turnaround window** follows every blocking reservation so companies have protected time for inspection, cleaning, maintenance, and fueling.
 - The booking calendar disables reserved dates, highlights turnaround boundaries, and shows the exact maximum available window before the next reservation. Oversized requests return a structured availability suggestion instead of being accepted.
 - Light, dark, and system themes using `next-themes`, persisted across pages without a flash of the wrong theme.
 - English and Arabic localization with server-rendered `<html lang>`/`dir`, a persisted `ff_lang` cookie, full RTL layout, and localized dashboard/auth/marketplace experiences.
+- A localized help center with searchable FAQs, email/urgent contact channels, and secure in-app support conversations. Selecting a rental routes the conversation directly between the renter and that rental company.
+- Persistent support tickets include categories, priority, unread state, automated delivery acknowledgements, company replies, and resolved/reopened workflows with participant-level access isolation.
+- A working notification center delivers renter messages, company replies, new booking requests, rental lifecycle changes, and bill updates with unread badges, direct links, polling, and mark-read controls.
+- A full settings center manages renter/company profiles, company workspace identity, notification channels and topics, persisted language/theme preferences, and secure password changes.
+- Maintenance windows are included in vehicle availability, blocked from new bookings, and protected by the same one-hour operational buffer as rentals. Upcoming, overdue, and reservation-risk maintenance generates company notifications.
 - Skeleton loading, empty states, responsive dialogs, confirmation prompts, toasts, optimistic status updates, and mobile navigation.
 
 ## Demo accounts
@@ -106,8 +114,11 @@ src/
 │   │   ├── page.tsx                 # Role-aware company/renter overview
 │   │   ├── vehicles/                # Fleet CRUD and per-vehicle history/analytics
 │   │   ├── rentals/                 # Role-aware rental pipeline and history
+│   │   ├── maintenance/             # Scheduling, recurring service, costs, and waybills
 │   │   ├── promotions/              # Promotion CRUD, targeting, and lifecycle
 │   │   ├── services/                # Premium-service catalog and daily pricing
+│   │   ├── support/                 # Help center and persistent in-app messaging
+│   │   ├── settings/                # Profile, workspace, preferences, and security
 │   │   └── browse/                  # Marketplace, vehicle details, and booking
 │   ├── invoice/[id]/                # Printable, downloadable, and shareable bill
 │   └── api/
@@ -127,6 +138,7 @@ src/
 | --- | --- | --- |
 | `POST /api/auth/register` · `login` · `logout` | Public | Session management |
 | `GET /api/auth/me` | Signed in | Current role and profile |
+| `GET /api/search` | Signed in | Ranked, role-isolated search across operational records, codes, plates, and amounts |
 | `GET /api/vehicles` | Both | Company fleet or renter marketplace |
 | `POST /api/vehicles` | Company | Create vehicle |
 | `GET/PATCH/DELETE /api/vehicles/[id]` | Company / renter read | Details, analytics, edit, status, delete |
@@ -140,6 +152,14 @@ src/
 | `PATCH/DELETE /api/services/[id]` | Company | Update price/availability or remove a service |
 | `GET /api/rentals/[id]/invoice` | Authorized/share token | Complete invoice JSON and breakdown |
 | `GET /api/rentals/[id]/invoice/pdf` | Authorized/share token | Printable/shareable PDF proposal or bill |
+| `GET/POST /api/support` | Signed in | List or create private support conversations |
+| `GET/POST/PATCH /api/support/[id]` | Conversation participants | Read, reply to, resolve, or reopen a support conversation |
+| `GET/PATCH /api/notifications` | Signed in | Notification inbox and read-state management |
+| `GET/POST /api/maintenance` | Company | Maintenance dashboard and reservation-safe work-order creation |
+| `PATCH /api/maintenance/[id]` | Company | Reschedule, start, complete, cancel, and attach waybills |
+| `GET /api/maintenance/[id]/waybill` | Company | Securely view an attached workshop waybill |
+| `POST /api/maintenance/items` · `PATCH /api/maintenance/items/[id]` | Company | Add or manage reusable maintenance catalog items |
+| `GET/PATCH /api/settings` | Signed in | Profile, workspace, preferences, and password management |
 | `GET /api/health` | Public | Liveness and database check |
 
 ## Scripts

@@ -74,10 +74,10 @@ export function BookingModal({ vehicle, onClose }: { vehicle: any; onClose: () =
     const containing = details.busyPeriods.find((period: any) =>
       startMs >= new Date(period.blockedFrom).getTime() && startMs < new Date(period.blockedUntil).getTime()
     );
-    if (containing) return { unavailable: true, nextAvailableAt: new Date(periodEnd(containing) + 3_600_000) };
-    const next = details.busyPeriods.find((period: any) => new Date(period.startsAt).getTime() > startMs);
+    if (containing) return { unavailable: true, nextAvailableAt: new Date(containing.blockedUntil || periodEnd(containing) + 3_600_000) };
+    const next = details.busyPeriods.find((period: any) => new Date(period.blockedFrom || period.startsAt).getTime() > startMs);
     if (!next) return { unavailable: false, availableUntil: null, availableMs: null, days: null };
-    const availableUntil = new Date(new Date(next.startsAt).getTime() - 3_600_000);
+    const availableUntil = new Date(next.blockedFrom || new Date(next.startsAt).getTime() - 3_600_000);
     const availableMs = Math.max(0, availableUntil.getTime() - startMs);
     return { unavailable: false, availableUntil, availableMs, days: Math.ceil(availableMs / dayMs), next };
   }, [details, startsAt]);

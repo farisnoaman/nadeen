@@ -1,6 +1,6 @@
 import { and, eq, inArray } from 'drizzle-orm';
 import { getDb } from '@/db';
-import { premiumServices, rentals, rentalServices, vehicles } from '@/db/schema';
+import { notifications, premiumServices, rentals, rentalServices, vehicles } from '@/db/schema';
 import { requireUser } from '@/lib/auth';
 import { fail, ok } from '@/lib/http';
 
@@ -46,6 +46,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       }
       const [updated] = await db.update(rentals).set({ extrasSubtotal, extraDiscount, total })
         .where(eq(rentals.id, rental.id)).returning();
+      await db.insert(notifications).values({
+        userId: rental.renterId,
+        type: 'billing_updated',
+        body: `FF-${String(rental.id).padStart(4, '0')}`,
+        href: `/invoice/${rental.id}?token=${encodeURIComponent(rental.invoiceToken)}`,
+        entityType: 'rental',
+        entityId: rental.id,
+        dedupeKey: `billing-updated-${rental.id}-${Date.now()}`,
+      });
       return ok({ rental: { ...updated, services: savedServices } });
     }
 
@@ -65,6 +74,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const [updated] = await db.update(rentals).set({ status })
       .where(and(eq(rentals.id, rental.id), eq(rentals.status, rental.status))).returning();
     if (!updated) throw new Error('The rental was updated elsewhere. Refresh and try again.');
+    await db.insert(notifications).values({
+      ...(user.role === 'company' ? { userId: rental.renterId } : { companyId: row.companyId }),
+      type: 'rental_status',
+      body: `FF-${String(rental.id).padStart(4, '0')} · ${status}`,
+      href: '/dashboard/rentals',
+      entityType: 'rental',
+      entityId: rental.id,
+      dedupeKey: `rental-status-${rental.id}-${status}-${Date.now()}`,
+    });
     const services = await db.select().from(rentalServices).where(eq(rentalServices.rentalId, rental.id));
     return ok({ rental: { ...updated, services } });
   } catch (error) { return fail(error); }
