@@ -49,7 +49,7 @@ html[lang="ar"] body{font-family:"Readex Pro",Inter,"Segoe UI",Arial,sans-serif}
 /* Complete right-to-left behavior */
 [dir="rtl"] body{font-family:"Segoe UI",Tahoma,Arial,sans-serif;text-align:start}
 [dir="rtl"] input,[dir="rtl"] textarea,[dir="rtl"] select{text-align:right}
-[dir="rtl"] input[type="email"],[dir="rtl"] input[type="url"],[dir="rtl"] input[type="time"],[dir="rtl"] input[type="date"],[dir="rtl"] .promo-code code,[dir="rtl"] kbd{direction:ltr;text-align:left}
+[dir="rtl"] input[type="email"],[dir="rtl"] input[type="url"],[dir="rtl"] input[type="time"],[dir="rtl"] input[type="date"],[dir="rtl"] input[type="tel"],[dir="rtl"] .promo-code code,[dir="rtl"] kbd{direction:ltr;text-align:left}
 [dir="rtl"] .lucide-arrow-right,[dir="rtl"] .lucide-arrow-left,[dir="rtl"] .lucide-chevron-right,[dir="rtl"] .lucide-chevron-left{transform:scaleX(-1)}
 [dir="rtl"] .hero-glow.one{right:auto;left:-220px}
 [dir="rtl"] .hero-glow.two{left:auto;right:-170px}
@@ -272,6 +272,8 @@ html[lang="ar"] body{font-family:"Readex Pro",Inter,"Segoe UI",Arial,sans-serif}
 .demo-code{background:var(--green-soft);color:var(--green);border:1px dashed color-mix(in srgb,var(--green) 45%,transparent);padding:9px 11px;border-radius:8px;margin:9px 0;font-size:var(--ff-type-small);text-align:center}
 .demo-code strong{letter-spacing:.18em}
 .phone-reset{display:block;margin:10px auto 0;background:transparent;color:var(--green);font-size:var(--ff-type-small);font-weight:700}
+.phone-reset:disabled{opacity:.55;cursor:not-allowed}
+.phone-reset-blocked{display:block;text-align:center;color:var(--muted);font-size:var(--ff-type-small);margin-top:8px;opacity:.85}
 .public-protection{margin-top:16px}.public-protection>header h3{display:flex;align-items:center;gap:7px;font-size:var(--ff-type-card-title)}.public-protection>header h3 svg{width:18px}.public-protection>header>span{color:var(--muted);font-size:var(--ff-type-small)}
 @media(max-width:650px){.public-marketplace .landing-nav .nav-actions>.btn{display:none}.public-marketplace-content{padding:20px 13px 45px}.social-auth{grid-template-columns:1fr}.auth-side{align-items:start}.auth-form{margin-top:20px}}
 
