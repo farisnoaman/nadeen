@@ -15,7 +15,14 @@ next-env.d.ts
 docs/
 
 # Dev tooling config — local only, never committed
-.agents/
-.claude/
+# Exception: the project commit-convention skill is tracked so every agent/environment inherits it
+.agents/*
+!.agents/skills/
+!.agents/skills/nadeen/
+!.agents/skills/nadeen/SKILL.md
+.claude/*
+!.claude/skills/
+!.claude/skills/nadeen/
+!.claude/skills/nadeen/SKILL.md
 .codex/
 .codegraph
