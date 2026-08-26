@@ -1,3 +1,5 @@
+import { isValidGulfMobile } from './phone-mobile';
+
 export function normalizePhoneNumber(input: unknown) {
   let value = String(input || '').trim().replace(/[\s().-]/g, '');
   if (value.startsWith('00')) value = `+${value.slice(2)}`;
@@ -5,6 +7,8 @@ export function normalizePhoneNumber(input: unknown) {
   else if (/^5\d{8}$/.test(value)) value = `+966${value}`;
   else if (!value.startsWith('+') && /^\d{8,15}$/.test(value)) value = `+${value}`;
   if (!/^\+[1-9]\d{7,14}$/.test(value)) throw new Error('Enter a valid phone number with country code.');
+  const m = value.match(/^\+(\d{1,4})(\d+)$/);
+  if (m && !isValidGulfMobile(m[1], m[2])) throw new Error('Enter a valid mobile number for the selected country.');
   return value;
 }
 
