@@ -139,8 +139,8 @@ export async function createInvoicePdf(invoice: any, locale: 'en' | 'ar' = 'en')
     const ArabicShaper = reshaperModule.ArabicShaper || reshaperModule.default?.ArabicShaper;
     const bidi = bidiFactory();
     pdf.registerFontkit(fontkit);
-    regular = await pdf.embedFont(fs.readFileSync(path.join(process.cwd(), 'public/fonts/DejaVuSans.ttf')), { subset: true });
-    bold = await pdf.embedFont(fs.readFileSync(path.join(process.cwd(), 'public/fonts/DejaVuSans-Bold.ttf')), { subset: true });
+    regular = await pdf.embedFont(fs.readFileSync(path.join(process.cwd(), 'public/fonts/ReadexPro.ttf')), { subset: true });
+    bold = await pdf.embedFont(fs.readFileSync(path.join(process.cwd(), 'public/fonts/ReadexPro-Bold.ttf')), { subset: true });
     visual = (input: string) => {
       const shaped = ArabicShaper.convertArabic(String(input));
       const chars = Array.from(shaped);

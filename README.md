@@ -315,7 +315,7 @@ The seed includes 17 vehicles, multiple pickup cities/sites per vehicle, whole-f
 - **UI:** Tailwind CSS v4 foundation plus a custom responsive design system
 - **Icons:** Lucide React
 - **Documents:** PDF-Lib, Fontkit, jsPDF, and html2canvas
-- **Arabic PDF support:** DejaVu Sans, Arabic reshaping, and bidi reordering
+- **Arabic PDF support:** self-hosted Readex Pro, Arabic reshaping, and bidi reordering
 - **QR codes:** `qrcode`
 - **Spreadsheet export:** Excel 2003 SpreadsheetML without an XLSX dependency
 - **Local seed runner:** `tsx`

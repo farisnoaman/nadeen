@@ -40,8 +40,8 @@ export async function createReportPdf(report:any, locale:'en'|'ar'='en') {
     const reshaperModule:any=await import('arabic-persian-reshaper');
     const ArabicShaper=reshaperModule.ArabicShaper||reshaperModule.default?.ArabicShaper;
     const bidi=bidiFactory();pdf.registerFontkit(fontkit);
-    regular=await pdf.embedFont(fs.readFileSync(path.join(process.cwd(),'public/fonts/DejaVuSans.ttf')),{subset:true});
-    bold=await pdf.embedFont(fs.readFileSync(path.join(process.cwd(),'public/fonts/DejaVuSans-Bold.ttf')),{subset:true});
+    regular=await pdf.embedFont(fs.readFileSync(path.join(process.cwd(),'public/fonts/ReadexPro.ttf')),{subset:true});
+    bold=await pdf.embedFont(fs.readFileSync(path.join(process.cwd(),'public/fonts/ReadexPro-Bold.ttf')),{subset:true});
     visual=(input:string)=>{const shaped=ArabicShaper.convertArabic(String(input));const chars=Array.from(shaped);const levels=bidi.getEmbeddingLevels(shaped,'rtl');for(const[start,end]of bidi.getReorderSegments(shaped,levels))chars.splice(start,end-start+1,...chars.slice(start,end+1).reverse());return chars.join('')};
   }else{regular=await pdf.embedFont(StandardFonts.Helvetica);bold=await pdf.embedFont(StandardFonts.HelveticaBold)}
   const W=841.89,H=595.28,marginX=30,green=rgb(.16,.34,.28),dark=rgb(.1,.14,.12),muted=rgb(.42,.47,.44),line=rgb(.86,.89,.87),soft=rgb(.94,.97,.95),white=rgb(1,1,1);
