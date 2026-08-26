@@ -143,6 +143,7 @@ ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS insurance_deductible DOUBLE PRECIS
 ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS protection_packages JSONB NOT NULL DEFAULT '[]'::jsonb;
 ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS pickup_locations JSONB NOT NULL DEFAULT '[]'::jsonb;
 ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS vin TEXT NOT NULL DEFAULT '';
+ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS images JSONB NOT NULL DEFAULT '[]'::jsonb;
 UPDATE vehicles SET pickup_locations = jsonb_build_array(jsonb_build_object('city', location, 'site', location))
 WHERE pickup_locations = '[]'::jsonb;
 UPDATE vehicles SET
@@ -411,7 +412,7 @@ WHERE ticket.company_id IS NOT NULL
 ON CONFLICT (dedupe_key) DO NOTHING;
 `;
 
-type Store = { promise?: Promise<any>; db?: any; raw?: any };
+type Store = { promise?: Promise<any>; db?: any; raw?: any; imagesReady?: Promise<void> };
 const globalStore = globalThis as typeof globalThis & { __fleetflowDb?: Store };
 const store = globalStore.__fleetflowDb ||= {};
 
@@ -467,7 +468,15 @@ async function initialize() {
 }
 
 export async function getDb() {
-  if (store.db) return store.db;
+  if (store.db) {
+    if (store.raw && !store.imagesReady) {
+      store.imagesReady = process.env.DATABASE_URL
+        ? store.raw.unsafe(`ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS images JSONB NOT NULL DEFAULT '[]'::jsonb`)
+        : store.raw.exec(`ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS images JSONB NOT NULL DEFAULT '[]'::jsonb`);
+    }
+    if (store.imagesReady) await store.imagesReady;
+    return store.db;
+  }
   store.promise ||= initialize();
   return store.promise;
 }

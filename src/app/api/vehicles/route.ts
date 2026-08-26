@@ -9,6 +9,7 @@ import { effectiveKilometerPolicy } from '@/lib/kilometer-policy';
 import { promotionState } from '@/lib/pricing';
 import { toPublicPromotion, toPublicVehicle } from '@/lib/public-vehicle';
 import { assertVehicleCapacity, requireVerifiedCompany } from '@/lib/platform';
+import { normalizeVehicleImages } from '@/lib/vehicle-images';
 
 const number = (value: unknown, minimum = 0) => Math.max(minimum, Number(value) || 0);
 const fuelLevel = (value: unknown) => Math.min(100, Math.max(0, Math.round(Number(value) || 0)));
@@ -95,7 +96,7 @@ export async function POST(request: Request) {
         insurancePolicyExpiry: policyExpiry,
         insuranceDeductible: number(body.insuranceDeductible), protectionPackages,
         location: pickupLocations[0].site, pickupLocations,
-        features: body.features || [], image: body.image || '/cars/audi.jpg',
+        features: body.features || [], image: body.image || '/cars/audi.jpg', images: normalizeVehicleImages(body.images),
         status: body.status || 'available', hourlyRate: number(body.hourlyRate), dailyRate: number(body.dailyRate),
         weeklyRate: number(body.weeklyRate), monthlyRate: number(body.monthlyRate), rating: 5,
       }).returning();

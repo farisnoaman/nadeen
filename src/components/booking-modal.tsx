@@ -55,7 +55,6 @@ export function BookingModal({ vehicle, onClose }: { vehicle: any; onClose: () =
   const [promo, setPromo] = useState<any>(null);
   const [conflict, setConflict] = useState<any>(null);
   const [busy, setBusy] = useState(false);
-
   useEffect(() => {
     if (vehicle) Promise.all([api(`/vehicles/${vehicle.id}`), api(`/services?vehicleId=${vehicle.id}`)])
       .then(([vehicleData, serviceData]: any[]) => {
@@ -211,7 +210,12 @@ export function BookingModal({ vehicle, onClose }: { vehicle: any; onClose: () =
         <img className="booking-image" src={vehicle.image} />
         <div className="booking-car-title"><div><span>{t(vehicle.category)}</span><h3>{vehicle.make} {vehicle.model}</h3></div><strong>{money(rates[type])}<small>/{t(type)}</small></strong></div>
         <div className="turnaround-policy"><ShieldCheck /><div><strong>{t('protectedTurnaround')}</strong><span>{t('protectedTurnaroundText')}</span></div></div>
-        <div className="busy-periods"><h4><CalendarDays />{t('busyPeriods')}</h4><p>{t('busyHint')}</p>{details?.busyPeriods?.length ? <div>{details.busyPeriods.map((period: any) => <span key={period.id}>{dateTime(period.startsAt)} → {dateTime(period.endsAt)} <StatusBadge status={period.status} /></span>)}</div> : <small>{t('noBusyPeriods')}</small>}</div>
+        <div className="busy-periods"><h4><CalendarDays />{t('busyPeriods')}</h4><p>{t('busyHint')}</p>{details?.busyPeriods?.length ? <div>{details.busyPeriods.map((period: any, index: number) => <span key={`${period.id}-${period.startsAt}-${period.endsAt}-${index}`}>{dateTime(period.startsAt)} → {dateTime(period.endsAt)} <StatusBadge status={period.status} /></span>)}</div> : <small>{t('noBusyPeriods')}</small>}</div>
+        <div className="desktop-booking-summary">
+          <div className="booking-odometer-ack"><ShieldCheck /><div><small>{t('quotationOdometerNotice')}</small><strong>{t('pickupOdometerFinalized')}</strong><p>{t('pickupSignatureRequired')}</p></div></div>
+          {loyalty&&<section className={`booking-loyalty loyalty-rank-${loyalty.currentLevel?.rank||0}`}><span><Award /></span><div><small>{t('yourLoyaltyLevel')}</small><strong>{loyalty.currentLevel?.name} · {Number(loyalty.points).toLocaleString()} {t('points')}</strong><p>{loyalty.currentLevel?.discountPercentage>0?t('loyaltyDiscountAppliedText').replace('{discount}',String(loyalty.currentLevel.discountPercentage)):t('earnPointsThisRental')} · <b>+{estimatedLoyaltyPoints} {t('estimatedPoints')}</b></p>{loyalty.nextLevel&&<em><i style={{width:`${loyalty.progress}%`}} />{Number(loyalty.pointsToNext).toLocaleString()} {t('pointsTo')} {loyalty.nextLevel.name}</em>}</div><aside><strong>{loyalty.currentLevel?.discountPercentage||0}%</strong><small>{t('automaticDiscount')}</small></aside></section>}
+          <div className="protection-contract-facts"><span><small>{t('dailyKilometerAllowance')}</small><strong>{Number(details?.vehicle?.dailyKilometerAllowance || vehicle.dailyKilometerAllowance || 0).toLocaleString()} {t('kilometers')}</strong></span><span><small>{t('allowedKilometers')}</small><strong>{((details?.vehicle?.dailyKilometerAllowance || vehicle.dailyKilometerAllowance || 0) * rentalDays).toLocaleString()} {t('kilometers')}</strong></span><span><small>{t('excessKilometerRate')}</small><strong>{money(details?.vehicle?.excessKilometerRate || vehicle.excessKilometerRate || 0)}/{t('kilometers')}</strong></span><span><small>{t('fuelPolicy')}</small><strong>{t(details?.vehicle?.fuelPolicy || vehicle.fuelPolicy || 'same_to_same')}</strong></span></div>
+        </div>
       </section>
       <section className="booking-fields">
         <label>{t('pickRate')}</label>

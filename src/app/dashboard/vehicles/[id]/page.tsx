@@ -7,6 +7,7 @@ import { api } from '@/lib/client-api';
 import { dateTime, money, shortDate } from '@/lib/format';
 import { useI18n } from '@/lib/i18n';
 import { Avatar, Empty, Modal, Skeleton, StatusBadge, useToast } from '@/components/ui';
+import { VehicleImageCarousel } from '@/components/vehicle-image-carousel';
 
 export default function VehicleDetail() {
   const { t } = useI18n();
@@ -44,7 +45,7 @@ export default function VehicleDetail() {
       <div><StatusBadge status={v.status}/>{data.userRole === 'company' && <button type="button" className="btn secondary" onClick={openReading}><Plus />{t('recordReading')}</button>}<Link href="/dashboard/vehicles" className="btn secondary"><Pencil />{t('edit')}</Link></div>
     </div>
     <div className="detail-grid">
-      <section className="panel vehicle-hero-panel"><img src={v.image}/><div className="detail-specs">{[
+      <section className="panel vehicle-hero-panel"><VehicleImageCarousel image={v.image} images={v.images}/><div className="detail-specs">{[
         [Gauge,`${v.odometer.toLocaleString()} ${t('kilometers')}`],
         [Fuel,`${v.fuelLevel}% · ${t(v.fuelPolicy)}`],
         [ShieldCheck,t(v.insuranceCoverage)],

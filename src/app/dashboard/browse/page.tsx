@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { ArrowRight, CarFront, Fuel, Gauge, Heart, MapPin, Search, SlidersHorizontal, Star, UserRound, X, Zap } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
-import { BookingModal } from '@/components/booking-modal';
+import { VehicleImageCarousel } from '@/components/vehicle-image-carousel';
 import { Empty, Skeleton } from '@/components/ui';
 import { api } from '@/lib/client-api';
 import { money } from '@/lib/format';
@@ -91,6 +91,5 @@ export default function BrowsePage() {
     </div></section>}
     <div className="filter-results"><span>{shown.length} {t('vehiclesFound')}</span>{activeFilters > 0 && <button onClick={clearAll}>{t('clearAll')}</button>}</div>
     {loading ? <Skeleton cards={6}/> : shown.length === 0 ? <Empty icon={CarFront} title={t('noCars')} text={t('tryDifferentFilters')} action={clearAll} label={t('clearFilters')}/> : <div className="vehicle-grid browse-grid">{shown.map(vehicle => <article className="vehicle-card marketplace-card" key={vehicle.id}><div className="vehicle-photo"><img src={vehicle.image}/><button className="save-car"><Heart/></button><span className="rating-badge"><Star fill="currentColor"/>{vehicle.rating}</span>{vehicle.promotions?.[0] && <span className="promo-tag"><Zap/>{vehicle.promotions[0].type === 'percentage' ? `${vehicle.promotions[0].value}% ${t('off')}` : `${money(vehicle.promotions[0].value)} ${t('off')}`}</span>}</div><div className="vehicle-body"><small>{vehicle.companyName}</small><div className="vehicle-title"><div><h3>{vehicle.make} {vehicle.model}</h3><p>{vehicle.year} · {vehicle.trim} · {t(vehicle.bodyType || vehicle.category)}</p></div></div><div className="car-specs"><span><Fuel/>{t(vehicle.fuel)}</span><span><UserRound/>{vehicle.seats} {t('seats')}</span><span><Gauge/>{t(vehicle.gearbox)}</span><span><Gauge/>{Number(vehicle.dailyKilometerAllowance).toLocaleString()} {t('kilometers')}/{t('day')}</span></div><div className="marketplace-locations"><MapPin/><span>{[...new Set((vehicle.pickupLocations||[]).map((location:any)=>location.city))].join(' · ')}</span><small>{(vehicle.pickupLocations||[]).length} {t('pickupSites')}</small></div><footer><span>{t('from')} <strong>{money(vehicle[fields[rate]])}</strong> / {t(rate)}</span><div><Link href={`/dashboard/browse/${vehicle.id}`} className="round-link"><ArrowRight/></Link><button className="btn primary small" onClick={() => setBooking(vehicle)}>{t('rentNow')}</button></div></footer></div></article>)}</div>}
-    {booking && <BookingModal vehicle={booking} onClose={() => setBooking(null)}/>}
   </>;
 }

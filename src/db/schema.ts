@@ -194,6 +194,7 @@ export const vehicles = pgTable('vehicles', {
   pickupLocations: jsonb('pickup_locations').$type<PickupLocationOption[]>().notNull().default([]),
   features: jsonb('features').$type<string[]>().notNull().default([]),
   image: text('image').notNull(),
+  images: jsonb('images').$type<string[]>().notNull().default([]),
   status: text('status').$type<'available' | 'maintenance' | 'retired'>().notNull().default('available'),
   hourlyRate: doublePrecision('hourly_rate').notNull(),
   dailyRate: doublePrecision('daily_rate').notNull(),

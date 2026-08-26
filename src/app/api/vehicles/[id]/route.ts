@@ -12,6 +12,7 @@ import { promotionState } from '@/lib/pricing';
 import { toPublicPromotion, toPublicVehicle } from '@/lib/public-vehicle';
 import { requireVerifiedCompany } from '@/lib/platform';
 import { canonicalOdometer, fuelEfficiencyAnalytics } from '@/lib/telemetry';
+import { normalizeVehicleImages } from '@/lib/vehicle-images';
 
 const boundedFuel = (value: unknown) => Math.min(100, Math.max(0, Math.round(Number(value))));
 
@@ -98,6 +99,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     for (const key of ['make', 'model', 'trim', 'category', 'bodyType', 'gearbox', 'drivetrain', 'steeringType', 'fuel', 'color', 'licensePlate', 'vin', 'image', 'status', 'fuelPolicy', 'insuranceCoverage', 'insuranceProvider', 'insurancePolicyNumber']) {
       if (body[key] !== undefined) data[key] = ['licensePlate', 'vin'].includes(key) ? String(body[key]).trim().toUpperCase() : body[key];
     }
+    if (body.images !== undefined) data.images = normalizeVehicleImages(body.images);
     if (body.pickupLocations !== undefined || body.location !== undefined) {
       const pickupLocations = normalizePickupLocations(body.pickupLocations, body.location || existing.location);
       if (!pickupLocations.length) throw new Error('Add at least one pickup city and site for this vehicle.');
