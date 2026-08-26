@@ -129,7 +129,7 @@ const ar: Dictionary = {
 };
 
 const dictionaries = { en, ar };
-const I18n = createContext<{ lang: Lang; t: (key: string) => string; setLang: (lang: Lang) => void }>({ lang:'en', t:key=>key, setLang:()=>{} });
+const I18n = createContext<{ lang: Lang; t: (key: string) => string; setLang: (lang: Lang) => void }>({ lang:'ar', t:key=>key, setLang:()=>{} });
 
 export function I18nProvider({ initialLang, children }: { initialLang: Lang; children: React.ReactNode }) {
   const [lang, setState] = useState<Lang>(initialLang);

@@ -125,7 +125,7 @@ const pdfTranslations: Record<string, string> = {
 const money = (value: number, locale: 'en' | 'ar') => locale === 'ar' ? `${Number(value).toFixed(2)} $` : `$${Number(value).toFixed(2)}`;
 const date = (value: Date | string, locale: 'en' | 'ar') => new Intl.DateTimeFormat(locale === 'ar' ? 'ar' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
 
-export async function createInvoicePdf(invoice: any, locale: 'en' | 'ar' = 'en') {
+export async function createInvoicePdf(invoice: any, locale: 'en' | 'ar' = 'ar') {
   const pdf = await PDFDocument.create();
   let page = pdf.addPage([595.28, 841.89]);
   const arabic = locale === 'ar';

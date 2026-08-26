@@ -7,7 +7,7 @@ export const metadata:Metadata={title:'FleetFlow — Move freely',description:'F
 export const viewport:Viewport={width:'device-width',initialScale:1,maximumScale:5,viewportFit:'cover',themeColor:[{media:'(prefers-color-scheme: light)',color:'#f5f6f2'},{media:'(prefers-color-scheme: dark)',color:'#111714'}]};
 export default async function RootLayout({children}:{children:React.ReactNode}){
   const cookieStore=await cookies();
-  const lang=cookieStore.get('ff_lang')?.value==='ar'?'ar':'en';
+  const lang=cookieStore.get('ff_lang')?.value=== 'en' ? 'en' : 'ar';
   const theme=cookieStore.get('ff_theme')?.value==='dark'?'dark':'light';
   return <html lang={lang} dir={lang==='ar'?'rtl':'ltr'} data-scroll-behavior="smooth" className={theme==='dark'?'dark':undefined} style={{colorScheme:theme}} suppressHydrationWarning><body><Providers lang={lang} theme={theme}>{children}</Providers></body></html>;
 }

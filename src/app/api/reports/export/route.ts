@@ -10,7 +10,7 @@ export async function GET(request:Request) {
     const format=url.searchParams.get('format')==='excel'?'excel':'pdf';
     if(user.role==='renter'&&format==='excel') throw new Error('Personal dashboards can be exported as PDF or printed.');
     const report=await loadOperationalReport(user,parseReportFilters(request));
-    const locale=(await cookies()).get('ff_lang')?.value==='ar'?'ar':'en';
+    const locale=(await cookies()).get('ff_lang')?.value=== 'en' ? 'en' : 'ar';
     if(format==='excel'){
       const workbook=createReportExcel(report);
       return new Response(workbook as BodyInit,{headers:{

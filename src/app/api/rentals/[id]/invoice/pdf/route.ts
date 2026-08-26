@@ -6,7 +6,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const { id } = await params;
     const token = new URL(request.url).searchParams.get('token');
     const invoice = await loadInvoice(Number(id), token);
-    const locale = (await cookies()).get('ff_lang')?.value === 'ar' ? 'ar' : 'en';
+    const locale = (await cookies()).get('ff_lang')?.value === 'en' ? 'en' : 'ar';
     const pdf = await createInvoicePdf(invoice, locale);
     return new Response(pdf as BodyInit, {
       headers: {
