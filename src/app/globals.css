@@ -264,6 +264,11 @@ html[lang="ar"] body{font-family:"Readex Pro",Inter,"Segoe UI",Arial,sans-serif}
 .phone-auth input{height:42px;border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:0 11px;font-size:11px;outline:none;width:100%}
 .phone-auth input:focus{border-color:var(--green);box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 12%,transparent)}
 .phone-auth .otp-input{font-size:19px;letter-spacing:.35em;text-align:center;font-variant-numeric:tabular-nums}
+.phone-row{display:flex;gap:8px;align-items:stretch}
+.phone-row .phone-country{width:108px;flex:0 0 auto;height:42px;border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:0 6px;font-size:11px;outline:none;color:var(--text)}
+.phone-row .phone-country:focus{border-color:var(--green);box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 12%,transparent)}
+.phone-row .phone-country:disabled{opacity:.58;cursor:not-allowed}
+.phone-row input{flex:1;min-width:0}
 .demo-code{background:var(--green-soft);color:var(--green);border:1px dashed color-mix(in srgb,var(--green) 45%,transparent);padding:9px 11px;border-radius:8px;margin:9px 0;font-size:var(--ff-type-small);text-align:center}
 .demo-code strong{letter-spacing:.18em}
 .phone-reset{display:block;margin:10px auto 0;background:transparent;color:var(--green);font-size:var(--ff-type-small);font-weight:700}
