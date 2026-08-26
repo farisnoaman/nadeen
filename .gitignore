@@ -8,3 +8,14 @@ data/
 *.tsbuildinfo
 .DS_Store
 next-env.d.ts
+
+# Local-only artifacts & references (not part of the shipped app)
+.omo/
+019ffbc6-4518-74e7-85cb-7644791b3420 (26).patch
+docs/
+
+# Dev tooling config — local only, never committed
+.agents/
+.claude/
+.codex/
+.codegraph
