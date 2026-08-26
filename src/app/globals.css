@@ -250,15 +250,19 @@ html[lang="ar"] body{font-family:"Readex Pro",Inter,"Segoe UI",Arial,sans-serif}
 .public-marketplace .landing-nav{background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30}
 .public-marketplace-content{width:min(1500px,100%);margin:0 auto;padding:32px clamp(18px,4vw,60px) 70px}
 .public-marketplace-content>.skeleton-grid{margin-top:30px}
-.social-auth{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.social-auth button{height:42px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--text);font-size:var(--ff-type-small);font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;transition:.2s}
-.social-auth button:hover{border-color:var(--green);background:var(--green-soft)}
-.social-auth b{width:21px;height:21px;border-radius:50%;display:grid;place-items:center;background:var(--bg);font-size:13px;color:var(--green)}
-.social-auth button:nth-child(2) b{background:#1877f2;color:#fff;font-family:Arial,sans-serif}
+.social-auth{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.social-auth button{height:44px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--text);font-size:var(--ff-type-small);font-weight:700;display:flex;align-items:center;justify-content:center;gap:9px;transition:.18s;padding:0 12px}
+.social-auth button:hover{border-color:var(--green);background:var(--green-soft);box-shadow:0 4px 12px rgba(29,42,35,.06)}
+.social-auth button:active{transform:translateY(1px)}
+.social-auth button svg{width:18px;height:18px;flex:0 0 auto}
 .auth-methods{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--bg);padding:4px;border-radius:10px;margin-bottom:14px}
 .auth-methods button{height:34px;border-radius:7px;background:transparent;color:var(--muted);font-size:var(--ff-type-small);display:flex;align-items:center;justify-content:center;gap:6px}
 .auth-methods button svg{width:15px}
 .auth-methods button.active{background:var(--surface);color:var(--green);box-shadow:0 2px 9px #17251f12;font-weight:750}
+.phone-auth{display:flex;flex-direction:column;gap:14px;margin-top:2px}
+.phone-auth label{display:flex;flex-direction:column;gap:6px;font-size:10px;font-weight:700;color:var(--muted);margin:0}
+.phone-auth input{height:42px;border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:0 11px;font-size:11px;outline:none;width:100%}
+.phone-auth input:focus{border-color:var(--green);box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 12%,transparent)}
 .phone-auth .otp-input{font-size:19px;letter-spacing:.35em;text-align:center;font-variant-numeric:tabular-nums}
 .demo-code{background:var(--green-soft);color:var(--green);border:1px dashed color-mix(in srgb,var(--green) 45%,transparent);padding:9px 11px;border-radius:8px;margin:9px 0;font-size:var(--ff-type-small);text-align:center}
 .demo-code strong{letter-spacing:.18em}
