@@ -2,6 +2,7 @@
 
 import {
   Award,
+  ArrowLeftRight,
   BellRing,
   Building2,
   Check,
@@ -28,7 +29,8 @@ import { Skeleton, useToast } from '@/components/ui';
 import { api, saveSessionToken } from '@/lib/client-api';
 import { useI18n } from '@/lib/i18n';
 import { AppTheme, useAppTheme } from '@/lib/theme';
-import { SUPPORTED_CURRENCIES } from '@/lib/currencies';
+import { SUPPORTED_CURRENCIES, CURRENCY_META, formatMoney } from '@/lib/currencies';
+import type { CurrencyCode } from '@/lib/currencies';
 
 type SettingsSection = 'profile' | 'workspace' | 'loyalty' | 'notifications' | 'appearance' | 'security';
 
@@ -535,6 +537,12 @@ function CurrencyRatesSection({ currency, setCurrency, saving, onSave, t }: {
   onSave: () => void;
   t: (key: string) => string;
 }) {
+  const { lang } = useI18n();
+  const nameOf = (code: string) => {
+    const meta = CURRENCY_META[code as CurrencyCode];
+    return meta ? (lang === 'ar' ? meta.labelAr : meta.labelEn) : code;
+  };
+  const symbolOf = (code: string) => CURRENCY_META[code as CurrencyCode]?.symbol ?? code;
   const toggleSupported = (code: string) => {
     if (code === currency.baseCurrency) return;
     const has = currency.supportedCurrencies.includes(code);
@@ -556,54 +564,85 @@ function CurrencyRatesSection({ currency, setCurrency, saving, onSave, t }: {
     setCurrency({ ...currency, exchangeRates: { ...currency.exchangeRates, [code]: Number.isFinite(n) ? n : 0 } });
   };
   const nonBase = currency.supportedCurrencies.filter(c => c !== currency.baseCurrency);
+  const baseSymbol = symbolOf(currency.baseCurrency);
   return (
     <form onSubmit={(event) => { event.preventDefault(); onSave(); }} className="settings-section-form currency-rates-form">
       <SettingsHeader icon={CircleDollarSign} title={t('settingsCurrencies')} text={t('settingsCurrenciesDescription')} />
-      <section className="currency-base-select">
-        <label>
-          {t('settingsBaseCurrency')}
-          <div><CircleDollarSign />
-            <select value={currency.baseCurrency} onChange={event => setBase(event.target.value)}>
-              {SUPPORTED_CURRENCIES.map(code => <option key={code} value={code}>{code}</option>)}
-            </select>
-          </div>
-        </label>
-      </section>
-      <section className="currency-supported-grid">
-        <header><div><strong>{t('settingsSupportedCurrencies')}</strong></div></header>
-        <div className="currency-supported-chips">
+
+      <section className="currency-base">
+        <header className="currency-block-header">
+          <span><CircleDollarSign /></span>
+          <div><strong>{t('settingsBaseCurrency')}</strong><small>{t('settingsBaseCurrencyText')}</small></div>
+          <em className="currency-base-badge">{baseSymbol} {currency.baseCurrency}</em>
+        </header>
+        <div className="currency-base-grid">
           {SUPPORTED_CURRENCIES.map(code => (
-            <label key={code} className={`currency-chip ${currency.supportedCurrencies.includes(code) ? 'on' : ''}`}>
-              <input
-                type="checkbox"
-                checked={currency.supportedCurrencies.includes(code)}
-                disabled={code === currency.baseCurrency}
-                onChange={() => toggleSupported(code)}
-              />
-              <span>{code}</span>
-            </label>
+            <button type="button" key={code} className={`currency-card ${currency.baseCurrency === code ? 'active' : ''}`} onClick={() => setBase(code)} aria-pressed={currency.baseCurrency === code}>
+              <span className="currency-symbol">{symbolOf(code)}</span>
+              <div><strong>{code}</strong><small>{nameOf(code)}</small></div>
+              {currency.baseCurrency === code && <Check className="currency-card-check" />}
+            </button>
           ))}
         </div>
       </section>
-      <section className="currency-rates-grid">
-        <header><div><strong>{t('settingsExchangeRates')}</strong><small>{t('settingsExchangeRateFor')}</small></div></header>
-        <div className="currency-rate-inputs">
-          {nonBase.length > 0 ? nonBase.map(code => (
-            <label key={code}>
-              {code}
-              <div>
-                <input
-                  type="number"
-                  min="0.0001"
-                  step="0.0001"
-                  value={currency.exchangeRates[code] ?? 0}
-                  onChange={event => setRate(code, event.target.value)}
-                />
-              </div>
-            </label>
-          )) : <small>{t('settingsCurrenciesAdminNote')}</small>}
+
+      <section className="currency-supported">
+        <header className="currency-block-header">
+          <span><Globe2 /></span>
+          <div><strong>{t('settingsSupportedCurrencies')}</strong><small>{t('settingsSupportedCurrenciesText')}</small></div>
+        </header>
+        <div className="currency-supported-list">
+          {SUPPORTED_CURRENCIES.map(code => {
+            const on = currency.supportedCurrencies.includes(code);
+            const isBase = code === currency.baseCurrency;
+            return (
+              <label key={code} className={`currency-row ${on ? 'on' : ''} ${isBase ? 'is-base' : ''}`}>
+                <span className="currency-symbol">{symbolOf(code)}</span>
+                <div className="currency-row-copy"><strong>{code}</strong><small>{nameOf(code)}</small></div>
+                {isBase ? (
+                  <span className="currency-base-tag">{t('settingsBaseCurrency')}</span>
+                ) : (
+                  <button type="button" role="switch" aria-checked={on} aria-label={nameOf(code)} className={`currency-toggle ${on ? 'on' : ''}`} onClick={() => toggleSupported(code)}><i /></button>
+                )}
+              </label>
+            );
+          })}
         </div>
       </section>
+
+      <section className="currency-rates">
+        <header className="currency-block-header">
+          <span><ArrowLeftRight /></span>
+          <div><strong>{t('settingsExchangeRates')}</strong><small>{t('settingsExchangeRateFor')}</small></div>
+        </header>
+        {nonBase.length > 0 ? (
+          <div className="currency-rate-list">
+            {nonBase.map(code => {
+              const rate = Number(currency.exchangeRates[code]) || 0;
+              const preview = rate ? rate * 100 : 0;
+              return (
+                <label key={code} className="currency-rate-row">
+                  <div className="currency-rate-target">
+                    <span className="currency-symbol">{symbolOf(code)}</span>
+                    <div><strong>{code}</strong><small>{nameOf(code)}</small></div>
+                  </div>
+                  <div className="currency-rate-input">
+                    <span className="currency-rate-equation">1 {baseSymbol}{currency.baseCurrency} =</span>
+                    <div className="currency-rate-field">
+                      <input type="number" min="0.0001" step="0.0001" value={rate} onChange={event => setRate(code, event.target.value)} aria-label={`${t('settingsExchangeRates')} ${code}`} />
+                      <span className="currency-rate-unit">{symbolOf(code)}</span>
+                    </div>
+                  </div>
+                  <div className="currency-rate-preview"><span>100 {currency.baseCurrency} ≈</span>{formatMoney(preview, code, lang)}</div>
+                </label>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="currency-rates-empty">{t('settingsCurrenciesAdminNote')}</div>
+        )}
+      </section>
+
       <div className="settings-workspace-note"><ShieldCheck /><span><strong>{t('settingsAdminOnly')}</strong><small>{t('settingsCurrenciesAdminNote')}</small></span></div>
       <SettingsActions button onClick={onSave} saving={saving} label={t('settingsSaveCurrencies')} t={t} />
     </form>
