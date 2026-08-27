@@ -7,7 +7,9 @@ import { BookingModal } from '@/components/booking-modal';
 import { VehicleImageCarousel } from '@/components/vehicle-image-carousel';
 import { Skeleton, StatusBadge } from '@/components/ui';
 import { api } from '@/lib/client-api';
-import { dateTime, money } from '@/lib/format';
+import { dateTime } from '@/lib/format';
+import { formatVehicleMoney } from '@/lib/currencies';
+import { useCurrency } from '@/lib/currency-provider';
 import { useI18n } from '@/lib/i18n';
 
 type Spec = { key: string; label: string; value: string; icon: 'gauge' | 'fuel' | 'seats' | 'body' | 'drivetrain' | 'mileage' | 'cities' | 'sites' | 'year' | 'color' | 'plate' | 'odo' | 'excess' | 'insurance' };
@@ -22,7 +24,8 @@ const SPECS_VISIBLE_COUNT = 6;
 const FEATURES_VISIBLE_COUNT = 6;
 
 export default function BrowseDetail() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const { currency } = useCurrency();
   const { id } = useParams();
   const [data, setData] = useState<any>(null);
   const [booking, setBooking] = useState(false);
@@ -38,7 +41,7 @@ export default function BrowseDetail() {
   const cities = [...new Set((v.pickupLocations || []).map((location: any) => location.city))];
   const sites = (v.pickupLocations || []).length;
   const dailyKm = Number(v.dailyKilometerAllowance || 0).toLocaleString();
-  const excessKm = v.excessKilometerRate ? `${money(v.excessKilometerRate)}/${t('kilometers')}` : t('included');
+  const excessKm = v.excessKilometerRate ? `${formatVehicleMoney(v.excessKilometerRate, v.companyCurrency, currency, lang)}/${t('kilometers')}` : t('included');
 
   const specs: Spec[] = [
     { key: 'transmission', label: t('specTransmission'), value: t(v.gearbox), icon: 'gauge' },
@@ -81,7 +84,7 @@ export default function BrowseDetail() {
             </div>
             <div>
               <small>{t('from')}</small>
-              <strong>{money(v.dailyRate)}</strong>
+              <strong>{formatVehicleMoney(v.dailyRate, v.companyCurrency, currency, lang)}</strong>
               <span>/{t('day')}</span>
             </div>
           </div>
@@ -175,7 +178,7 @@ export default function BrowseDetail() {
             {[['hour', v.hourlyRate], ['day', v.dailyRate], ['week', v.weeklyRate], ['month', v.monthlyRate]].map(([label, value]) => (
               <div key={label as string}>
                 <span>{t('per')} {t(label as string)}</span>
-                <strong>{money(value as number)}</strong>
+                <strong>{formatVehicleMoney(value as number, v.companyCurrency, currency, lang)}</strong>
               </div>
             ))}
             <button className="btn primary big" onClick={() => setBooking(true)}>{t('rentNow')}</button>

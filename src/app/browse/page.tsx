@@ -7,6 +7,8 @@ import { LanguageToggle, ThemeToggle } from '@/components/theme-controls';
 import { Empty, Skeleton } from '@/components/ui';
 import { api } from '@/lib/client-api';
 import { money } from '@/lib/format';
+import { formatVehicleMoney } from '@/lib/currencies';
+import { useCurrency } from '@/lib/currency-provider';
 import { useI18n } from '@/lib/i18n';
 import { VehicleImageCarousel } from '@/components/vehicle-image-carousel';
 import { BookingModal } from '@/components/booking-modal';
@@ -22,7 +24,8 @@ const fields: Record<Rate, string> = { hour:'hourlyRate', day:'dailyRate', week:
 const unique = (values: string[]) => [...new Set(values.filter(Boolean))].sort((a,b) => a.localeCompare(b));
 
 export default function BrowsePage() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const { currency } = useCurrency();
   const searchParams = useSearchParams();
   const router = useRouter();
   const requestedPromotion = searchParams.get('promotion');
@@ -160,7 +163,7 @@ export default function BrowsePage() {
             {favorites.has(vehicle.id) ? <Heart fill="currentColor" /> : <Heart />}
           </button>
           <span className="rating-badge"><Star fill="currentColor"/>{vehicle.rating}</span>
-          {vehicle.promotions?.[0] && <span className="promo-tag"><Zap/>{vehicle.promotions[0].type === 'percentage' ? `${vehicle.promotions[0].value}% ${t('off')}` : `${money(vehicle.promotions[0].value)} ${t('off')}`}</span>}
+          {vehicle.promotions?.[0] && <span className="promo-tag"><Zap/>{vehicle.promotions[0].type === 'percentage' ? `${vehicle.promotions[0].value}% ${t('off')}` : `${formatVehicleMoney(vehicle.promotions[0].value, vehicle.companyCurrency, currency, lang)} ${t('off')}`}</span>}
         </div>
 
         {/* NEW FIX: Lifts the body content above the .card-stretch layer */}
@@ -185,7 +188,7 @@ export default function BrowsePage() {
           </div>
 
           <footer style={{ position: 'relative', zIndex: 3 }}>
-            <span>{t('from')} <strong>{money(vehicle[fields[rate]])}</strong> / {t(rate)}</span>
+            <span>{t('from')} <strong>{formatVehicleMoney(vehicle[fields[rate]], vehicle.companyCurrency, currency, lang)}</strong> / {t(rate)}</span>
             <div style={{ position: 'relative', zIndex: 99, display: 'flex', gap: '0.5rem' }}>
               <Link
                 href={`/browse/${vehicle.id}`}
