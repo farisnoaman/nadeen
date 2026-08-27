@@ -351,47 +351,47 @@ const { theme, setTheme } = useAppTheme();
               </button>
             </div>
 
-            {notificationOpen && (
-              <>
-                <button type="button" className="notification-scrim" onClick={() => setNotificationOpen(false)} aria-label={t('close')} />
-                <section className="notification-menu">
-                  <header>
-                    <div><h3>{t('notifications')}</h3>{unreadCount > 0 && <span>{unreadCount} {t('notificationNew')}</span>}</div>
-                    {unreadCount > 0 && <button type="button" onClick={markAllRead}><CheckCheck />{t('notificationMarkAll')}</button>}
-                  </header>
-                  <div className="notification-list">
-                    {notificationLoading ? (
-                      <div className="notification-loading"><Skeleton rows={4} /></div>
-                    ) : notificationItems.length ? notificationItems.map(item => (
-                      <button type="button" key={item.id} className={item.readAt ? '' : 'unread'} onClick={() => openNotification(item)}>
-                        <span className={`notification-icon notification-${item.type}`}>{notificationIcon(item.type)}</span>
-                        <span>
-                          <strong>{notificationTitle(item.type)}</strong>
-                          <small>{notificationBody(item)}</small>
-                          <time>{notificationTime(item.createdAt)}</time>
-                        </span>
-                        {!item.readAt && <i />}
-                      </button>
-                    )) : (
-                      <div className="notification-empty"><Bell /><strong>{t('notificationEmpty')}</strong><span>{t('notificationEmptyText')}</span></div>
-                    )}
-                  </div>
-                  <footer><Link href="/dashboard/support" onClick={() => setNotificationOpen(false)}>{t('notificationOpenSupport')}<MessageCircle /></Link></footer>
-                </section>
-              </>
-            )}
-
-            {profile && (
-              <>
-                <button type="button" className="profile-scrim" onClick={() => setProfile(false)} />
-                <div className="profile-menu">
-                  <div><Avatar name={user.name} initials={user.avatar} /><span><strong>{user.name}</strong><small>{user.email}</small></span></div>
-                  <Link href="/dashboard/settings" onClick={() => setProfile(false)}><Settings />{t('settings')}</Link>
-                  <button type="button" onClick={logout} className="danger"><LogOut />{t('logout')}</button>
-                </div>
-              </>
-            )}
           </header>
+          {notificationOpen && (
+            <>
+              <button type="button" className="notification-scrim" onClick={() => setNotificationOpen(false)} aria-label={t('close')} />
+              <section className="notification-menu">
+                <header>
+                  <div><h3>{t('notifications')}</h3>{unreadCount > 0 && <span>{unreadCount} {t('notificationNew')}</span>}</div>
+                  {unreadCount > 0 && <button type="button" onClick={markAllRead}><CheckCheck />{t('notificationMarkAll')}</button>}
+                </header>
+                <div className="notification-list">
+                  {notificationLoading ? (
+                    <div className="notification-loading"><Skeleton rows={4} /></div>
+                  ) : notificationItems.length ? notificationItems.map(item => (
+                    <button type="button" key={item.id} className={item.readAt ? '' : 'unread'} onClick={() => openNotification(item)}>
+                      <span className={`notification-icon notification-${item.type}`}>{notificationIcon(item.type)}</span>
+                      <span>
+                        <strong>{notificationTitle(item.type)}</strong>
+                        <small>{notificationBody(item)}</small>
+                        <time>{notificationTime(item.createdAt)}</time>
+                      </span>
+                      {!item.readAt && <i />}
+                    </button>
+                  )) : (
+                    <div className="notification-empty"><Bell /><strong>{t('notificationEmpty')}</strong><span>{t('notificationEmptyText')}</span></div>
+                  )}
+                </div>
+                <footer><Link href="/dashboard/support" onClick={() => setNotificationOpen(false)}>{t('notificationOpenSupport')}<MessageCircle /></Link></footer>
+              </section>
+            </>
+          )}
+
+          {profile && (
+            <>
+              <button type="button" className="profile-scrim" onClick={() => setProfile(false)} />
+              <div className="profile-menu">
+                <div><Avatar name={user.name} initials={user.avatar} /><span><strong>{user.name}</strong><small>{user.email}</small></span></div>
+                <Link href="/dashboard/settings" onClick={() => setProfile(false)}><Settings />{t('settings')}</Link>
+                <button type="button" onClick={logout} className="danger"><LogOut />{t('logout')}</button>
+              </div>
+            </>
+          )}
           <div className="dash-content">{children}</div>
         </main>
       </div>
