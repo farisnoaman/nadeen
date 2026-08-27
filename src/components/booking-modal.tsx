@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AvailabilityCalendar } from './availability-calendar';
 import { Modal, StatusBadge, useToast } from './ui';
+import { VehicleImageCarousel } from './vehicle-image-carousel';
 import { api } from '@/lib/client-api';
 import { dateTime, money } from '@/lib/format';
 import { useI18n } from '@/lib/i18n';
@@ -207,7 +208,7 @@ export function BookingModal({ vehicle, onClose }: { vehicle: any; onClose: () =
   return <Modal open={!!vehicle} onClose={onClose} title={t('bookTitle')} subtitle={`${vehicle.make} ${vehicle.model} · ${vehicle.companyName}`} wide>
     <div className="booking-modal enhanced-booking">
       <section>
-        <img className="booking-image" src={vehicle.image} />
+        <VehicleImageCarousel className="booking-image" image={vehicle.image} images={vehicle.images} variant="modal" alt={`${vehicle.make} ${vehicle.model}`} />
         <div className="booking-car-title"><div><span>{t(vehicle.category)}</span><h3>{vehicle.make} {vehicle.model}</h3></div><strong>{money(rates[type])}<small>/{t(type)}</small></strong></div>
         <div className="turnaround-policy"><ShieldCheck /><div><strong>{t('protectedTurnaround')}</strong><span>{t('protectedTurnaroundText')}</span></div></div>
         <div className="busy-periods"><h4><CalendarDays />{t('busyPeriods')}</h4><p>{t('busyHint')}</p>{details?.busyPeriods?.length ? <div>{details.busyPeriods.map((period: any, index: number) => <span key={`${period.id}-${period.startsAt}-${period.endsAt}-${index}`}>{dateTime(period.startsAt)} → {dateTime(period.endsAt)} <StatusBadge status={period.status} /></span>)}</div> : <small>{t('noBusyPeriods')}</small>}</div>
