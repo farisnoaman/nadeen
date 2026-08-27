@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { LanguageToggle, ThemeToggle } from '@/components/theme-controls';
 import { Skeleton, StatusBadge, useToast } from '@/components/ui';
 import { api } from '@/lib/client-api';
-import { dateTime, money } from '@/lib/format';
+import { dateTime, formatMoney } from '@/lib/format';
 import { useI18n } from '@/lib/i18n';
 import type { RentalDocumentStage } from '@/lib/rental-document';
 
@@ -17,7 +17,7 @@ function DocumentStageBadge({ stage }:{ stage:RentalDocumentStage }) {
 
 export default function InvoicePage() {
   const { id } = useParams();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const toast = useToast();
   const [data, setData] = useState<any>(null);
   const [token, setToken] = useState('');
@@ -147,6 +147,7 @@ export default function InvoicePage() {
 
   if (!data) return <div className="invoice-loading"><Skeleton rows={6} /></div>;
   const r = data.rental;
+  const money = (value: number) => formatMoney(Number(value) * (Number(r.exchangeRate) || 1), r.currency || 'USD', lang);
   return <div className="invoice-page">
     <header className="invoice-toolbar no-print"><Link href="/dashboard/rentals" className="back-link"><ArrowLeft />{t('invoiceBack')}</Link><div><LanguageToggle /><ThemeToggle /><button className="btn secondary" onClick={downloadPdf} disabled={pdfBusy || !qrCode} aria-label={pdfBusy ? t('pdfPreparing') : t('pdf')}><Download /><span>{pdfBusy ? t('pdfPreparing') : t('pdf')}</span></button><button className="btn secondary" onClick={() => sharePdf('email')} disabled={pdfBusy || !qrCode} aria-label={t('emailAction')}><Mail /><span>{t('emailAction')}</span></button><button className="btn secondary" onClick={() => sharePdf('whatsapp')} disabled={pdfBusy || !qrCode} aria-label={t('whatsapp')}><MessageCircle /><span>{t('whatsapp')}</span></button><button className="btn primary" onClick={printInvoice} disabled={!qrCode} aria-label={t('print')}><Printer /><span>{t('print')}</span></button></div></header>
     <main className="invoice-sheet" ref={sheetRef}>

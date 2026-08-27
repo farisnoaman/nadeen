@@ -234,6 +234,7 @@ export async function loadOperationalReport(user:SessionUser, filters:ReportFilt
     reportNumber:`RPT-${companyMode?`C${companyId}`:`U${user.id}`}-${filters.start.toISOString().slice(0,10).replaceAll('-','')}`,
     generatedAt:new Date().toISOString(),
     mode:companyMode?'company':'renter',
+    currency:companyMode?(company?.baseCurrency||'USD'):'USD',
     reportType:filters.type,
     owner:{ name:companyMode?(company?.name||user.companyName||'Company'):user.name, city:companyMode?(company?.city||''):'', logo:companyMode?(company?.logo||'FF'):'FF', email:user.email },
     period:{ start:filters.start.toISOString(), end:filters.end.toISOString(), previousStart:previousStart.toISOString(), previousEnd:previousEnd.toISOString() },

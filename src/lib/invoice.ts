@@ -37,6 +37,7 @@ export async function loadInvoice(rentalId: number, token?: string | null) {
     kilometerPolicyId: rentals.kilometerPolicyId, kilometerPolicyName: rentals.kilometerPolicyName,
     excessDistanceCharge: rentals.excessDistanceCharge,
     total: rentals.total, promoCode: rentals.promoCode,
+    currency: rentals.currency, exchangeRate: rentals.exchangeRate,
     invoiceToken: rentals.invoiceToken, pickupCity: rentals.pickupCity,
     pickupLocation: rentals.pickupLocation, returnCity: rentals.returnCity,
     returnLocation: rentals.returnLocation, createdAt: rentals.createdAt,
@@ -123,10 +124,12 @@ const pdfTranslations: Record<string, string> = {
   third_party: 'مسؤولية تجاه الغير', comprehensive: 'تأمين شامل',
 };
 
-const money = (value: number, locale: 'en' | 'ar' = 'en') => formatMoney(value, 'USD', locale);
 const date = (value: Date | string, locale: 'en' | 'ar') => new Intl.DateTimeFormat(locale === 'ar' ? 'ar' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
 
 export async function createInvoicePdf(invoice: any, locale: 'en' | 'ar' = 'ar') {
+  const displayCurrency = (invoice.rental?.currency || 'USD') as string;
+  const displayRate = Number(invoice.rental?.exchangeRate) || 1;
+  const money = (value: number, locale: 'en' | 'ar' = 'en') => formatMoney(Number(value) * displayRate, displayCurrency, locale);
   const pdf = await PDFDocument.create();
   let page = pdf.addPage([595.28, 841.89]);
   const arabic = locale === 'ar';

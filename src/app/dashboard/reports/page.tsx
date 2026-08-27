@@ -3,13 +3,15 @@ import { BarChart3, Building2, CalendarDays, CarFront, Download, FileSpreadsheet
 import { useEffect, useMemo, useState } from 'react';
 import { Skeleton, useToast } from '@/components/ui';
 import { api, apiFile } from '@/lib/client-api';
-import { money, shortDate } from '@/lib/format';
+import { formatMoney, shortDate } from '@/lib/format';
 import { useI18n } from '@/lib/i18n';
 
 const today=new Date().toISOString().slice(0,10);
 const yearStart=`${new Date().getFullYear()}-01-01`;
 const pct=(value:number)=>`${Number(value||0).toFixed(1)}%`;
 const num=(value:number)=>Number(value||0).toLocaleString();
+let reportCurrency='USD';
+const money=(value:number)=>formatMoney(Number(value)||0, reportCurrency);
 const chunks=<T,>(rows:T[],size:number)=>Array.from({length:Math.ceil(rows.length/size)},(_,index)=>rows.slice(index*size,index*size+size));
 
 export default function ReportsPage(){
@@ -17,6 +19,7 @@ export default function ReportsPage(){
   const[filters,setFilters]=useState({type:'company',start:yearStart,end:today,vehicleId:'',customerId:''});
   const[report,setReport]=useState<any>(null);const[loading,setLoading]=useState(true);const[exporting,setExporting]=useState('');
   const renterMode=report?.mode==='renter';
+  reportCurrency=report?.currency||'USD';
   const query=useMemo(()=>{const params=new URLSearchParams({start:filters.start,end:filters.end});if(!renterMode){params.set('type',filters.type);if(filters.vehicleId)params.set('vehicleId',filters.vehicleId);if(filters.customerId)params.set('customerId',filters.customerId)}return params.toString()},[filters,renterMode]);
   const generate=async(nextQuery=query)=>{setLoading(true);try{const data:any=await api(`/reports?${nextQuery}`);setReport(data.report)}catch(error:any){toast(error.message,true)}finally{setLoading(false)}};
   useEffect(()=>{generate()},[]);

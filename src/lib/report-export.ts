@@ -26,12 +26,12 @@ const labels:Record<string,string> = {
   'Completed Trips':'الرحلات المكتملة', 'Total Spent':'إجمالي الإنفاق', Pending:'معلق', Active:'نشط', Completed:'مكتمل', Cancelled:'ملغي',
 };
 const reportTitle = (type:string, mode:string) => mode === 'renter' ? 'Personal Rental Dashboard' : type === 'vehicle' ? 'Vehicle Detailed Report' : type === 'rental_history' ? 'Detailed Rental History' : type === 'customer' ? 'Customer Rental Report' : 'Company Performance & Rental Report';
-const money = (value:unknown, locale:'en'|'ar'='en') => formatMoney(Number(value||0), 'USD', locale);
 const number = (value:unknown, locale:'en'|'ar') => Number(value||0).toLocaleString(locale === 'ar' ? 'ar' : 'en-US',{maximumFractionDigits:2});
 const date = (value:unknown, locale:'en'|'ar') => new Intl.DateTimeFormat(locale === 'ar' ? 'ar' : 'en-US',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(value as any));
 const percent = (value:unknown, locale:'en'|'ar') => `${number(value,locale)}%`;
 
 export async function createReportPdf(report:any, locale:'en'|'ar'='en') {
+  const money = (value:unknown, loc:'en'|'ar'=locale) => formatMoney(Number(value||0), report?.currency || 'USD', loc);
   const pdf=await PDFDocument.create();
   const arabic=locale==='ar';
   let regular:any,bold:any,visual=(text:string)=>String(text);
