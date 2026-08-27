@@ -38,6 +38,9 @@ ALTER TABLE companies ADD COLUMN IF NOT EXISTS max_vehicles_override INTEGER;
 ALTER TABLE companies ADD COLUMN IF NOT EXISTS max_rental_requests_override INTEGER;
 ALTER TABLE companies ADD COLUMN IF NOT EXISTS storage_gb_override INTEGER;
 ALTER TABLE companies ALTER COLUMN operational_status SET DEFAULT 'paused';
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS base_currency TEXT NOT NULL DEFAULT 'USD';
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS supported_currencies JSONB NOT NULL DEFAULT '["USD"]'::jsonb;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS exchange_rates JSONB NOT NULL DEFAULT '{}'::jsonb;
 UPDATE companies SET verified_at=COALESCE(verified_at,created_at) WHERE verification_status='verified' AND verified_at IS NULL;
 ALTER TABLE companies ALTER COLUMN verification_status SET DEFAULT 'unsubmitted';
 UPDATE companies SET subscription_plan_id=(SELECT id FROM subscription_plans WHERE code='GROWTH'),
@@ -288,6 +291,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS rentals_invoice_token_idx ON rentals(invoice_t
 CREATE INDEX IF NOT EXISTS rentals_vehicle_idx ON rentals(vehicle_id);
 CREATE INDEX IF NOT EXISTS rentals_renter_idx ON rentals(renter_id);
 CREATE INDEX IF NOT EXISTS rentals_status_idx ON rentals(status);
+ALTER TABLE rentals ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'USD';
+ALTER TABLE rentals ADD COLUMN IF NOT EXISTS exchange_rate DOUBLE PRECISION NOT NULL DEFAULT 1;
 CREATE TABLE IF NOT EXISTS rental_services (
   id SERIAL PRIMARY KEY, rental_id INTEGER NOT NULL REFERENCES rentals(id) ON DELETE CASCADE,
   service_id INTEGER REFERENCES premium_services(id) ON DELETE SET NULL,
@@ -387,6 +392,7 @@ CREATE TABLE IF NOT EXISTS user_settings (
   theme TEXT NOT NULL DEFAULT 'light' CHECK(theme IN ('light','dark')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'USD';
 INSERT INTO user_settings(user_id)
 SELECT id FROM users
 ON CONFLICT (user_id) DO NOTHING;

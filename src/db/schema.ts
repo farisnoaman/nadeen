@@ -37,6 +37,9 @@ export const companies = pgTable('companies', {
   maxVehiclesOverride: integer('max_vehicles_override'),
   maxRentalRequestsOverride: integer('max_rental_requests_override'),
   storageGbOverride: integer('storage_gb_override'),
+  baseCurrency: text('base_currency').notNull().default('USD'),
+  supportedCurrencies: jsonb('supported_currencies').$type<string[]>().notNull().default(['USD']),
+  exchangeRates: jsonb('exchange_rates').$type<Record<string, number>>().notNull().default({}),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
@@ -356,6 +359,8 @@ export const rentals = pgTable('rentals', {
   kilometerPolicyName: text('kilometer_policy_name').notNull().default('Vehicle mileage terms'),
   excessDistanceCharge: doublePrecision('excess_distance_charge').notNull().default(0),
   total: doublePrecision('total').notNull(),
+  currency: text('currency').notNull().default('USD'),
+  exchangeRate: doublePrecision('exchange_rate').notNull().default(1),
   promoCode: text('promo_code'),
   invoiceToken: text('invoice_token').notNull(),
   pickupCity: text('pickup_city').notNull().default(''),
@@ -493,6 +498,7 @@ export const userSettings = pgTable('user_settings', {
   weeklySummary: boolean('weekly_summary').notNull().default(true),
   language: text('language').$type<'en' | 'ar'>().notNull().default('en'),
   theme: text('theme').$type<'light' | 'dark'>().notNull().default('light'),
+  currency: text('currency').notNull().default('USD'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
