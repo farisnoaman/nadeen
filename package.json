@@ -38,6 +38,7 @@
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "drizzle-kit": "latest",
+    "playwright": "^1.62.1",
     "tailwindcss": "latest",
     "tsx": "latest",
     "typescript": "latest"
