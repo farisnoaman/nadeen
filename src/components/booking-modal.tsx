@@ -192,6 +192,7 @@ export function BookingModal({ vehicle, onClose }: { vehicle: any; onClose: () =
     try {
       await api('/rentals', { method: 'POST', body: JSON.stringify({
         vehicleId: vehicle.id, rateType: type, quantity,
+        currency,
         startsAt: startsAt.toISOString(), endsAt: returnAt.toISOString(), promoCode: promo?.promotion.code,
         protectionPackageId: selectedProtection?.id || null,
         protectionTier: selectedProtection?.tier || 'basic',

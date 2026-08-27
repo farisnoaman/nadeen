@@ -45,6 +45,7 @@ const rentalSelect = {
     kilometerPolicyId: rentals.kilometerPolicyId, kilometerPolicyName: rentals.kilometerPolicyName,
     excessDistanceCharge: rentals.excessDistanceCharge,
   total: rentals.total, promoCode: rentals.promoCode,
+  currency: rentals.currency, exchangeRate: rentals.exchangeRate,
   invoiceToken: rentals.invoiceToken, pickupCity: rentals.pickupCity,
   pickupLocation: rentals.pickupLocation, returnCity: rentals.returnCity,
   returnLocation: rentals.returnLocation, createdAt: rentals.createdAt,
@@ -89,6 +90,19 @@ export async function POST(request: Request) {
     const entitlement=await companyEntitlement(db,vehicle.companyId);
     assertBookableCompany(entitlement);
     assertRentalRequestCapacity(entitlement);
+
+    const [companyCurrencyRow] = await db.select({
+      baseCurrency: companies.baseCurrency,
+      supportedCurrencies: companies.supportedCurrencies,
+      exchangeRates: companies.exchangeRates,
+    }).from(companies).where(eq(companies.id, vehicle.companyId)).limit(1);
+    const baseCurrency = companyCurrencyRow?.baseCurrency || 'USD';
+    const supportedCurrencies = companyCurrencyRow?.supportedCurrencies || ['USD'];
+    const requestedCurrency = body.currency;
+    const rentalCurrency = supportedCurrencies.includes(requestedCurrency) ? requestedCurrency : baseCurrency;
+    const rentalExchangeRate = rentalCurrency === baseCurrency
+      ? 1
+      : Number(companyCurrencyRow?.exchangeRates?.[rentalCurrency] || 1);
 
     const type = body.rateType as RateType;
     if (!['hour', 'day', 'week', 'month'].includes(type)) throw new Error('Choose a valid rate type.');
@@ -251,6 +265,7 @@ export async function POST(request: Request) {
       const [row] = await tx.insert(rentals).values({
         vehicleId: vehicle.id, renterId: user.id, status: 'pending', rateType: type,
         quantity, startsAt, endsAt, subtotal, discount,
+        currency: rentalCurrency, exchangeRate: rentalExchangeRate,
         loyaltyLevelId:loyalty.levelId, loyaltyLevelName:loyalty.levelName,
         loyaltyDiscountPercentage:loyalty.discountPercentage, loyaltyDiscount:loyalty.discount,
         loyaltyPointsRate:loyalty.pointsRate, loyaltyPointsEarned:0,
