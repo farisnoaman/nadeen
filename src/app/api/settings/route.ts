@@ -5,6 +5,7 @@ import { companies, userSettings, users } from '@/db/schema';
 import { createSession, loadSessionUser, requireUser } from '@/lib/auth';
 import { fail, ok } from '@/lib/http';
 import { companyLoyaltySettings, saveCompanyLoyaltySettings } from '@/lib/loyalty';
+import { SUPPORTED_CURRENCIES } from '@/lib/currencies';
 
 async function ensurePreferences(db: any, userId: number) {
   await db.insert(userSettings).values({ userId }).onConflictDoNothing();
@@ -37,7 +38,14 @@ export async function GET() {
     const loyalty = user.role === 'company' && user.companyId
       ? await companyLoyaltySettings(db, user.companyId)
       : null;
-    return ok({ profile, preferences, loyalty });
+    const currency = user.role === 'company' && user.companyId
+      ? await db.select({
+          baseCurrency: companies.baseCurrency,
+          supportedCurrencies: companies.supportedCurrencies,
+          exchangeRates: companies.exchangeRates,
+        }).from(companies).where(eq(companies.id, user.companyId)).limit(1)
+      : null;
+    return ok({ profile, preferences, loyalty, currency });
   } catch (error) {
     return fail(error);
   }
@@ -135,6 +143,47 @@ export async function PATCH(request: Request) {
       const passwordHash = await bcrypt.hash(newPassword, 10);
       await db.update(users).set({ passwordHash }).where(eq(users.id, user.id));
       return ok({ changed: true });
+    }
+
+    if (body.action === 'currencies') {
+      if (user.role !== 'company' || !user.companyId) throw new Error('Only company administrators can manage currency settings.');
+      const baseCurrency = String(body.baseCurrency || 'USD');
+      if (!SUPPORTED_CURRENCIES.includes(baseCurrency as (typeof SUPPORTED_CURRENCIES)[number])) {
+        throw new Error('Choose a valid base currency.');
+      }
+      const supported: string[] = Array.isArray(body.supportedCurrencies)
+        ? body.supportedCurrencies.map(String)
+        : ['USD'];
+      if (!supported.length) throw new Error('Select at least one supported currency.');
+      if (!supported.includes(baseCurrency)) {
+        throw new Error('The base currency must be included in the supported currencies.');
+      }
+      for (const code of supported) {
+        if (!SUPPORTED_CURRENCIES.includes(code as (typeof SUPPORTED_CURRENCIES)[number])) {
+          throw new Error('Choose valid supported currencies.');
+        }
+      }
+      const rates: Record<string, number> = {};
+      const incomingRates = (body.exchangeRates && typeof body.exchangeRates === 'object') ? body.exchangeRates : {};
+      for (const code of supported) {
+        if (code === baseCurrency) continue;
+        const rate = Number(incomingRates[code]);
+        if (!Number.isFinite(rate) || rate <= 0) {
+          throw new Error(`Enter a positive exchange rate for ${code}.`);
+        }
+        rates[code] = rate;
+      }
+      await db.update(companies).set({
+        baseCurrency,
+        supportedCurrencies: supported,
+        exchangeRates: rates,
+      }).where(eq(companies.id, user.companyId));
+      const [currency] = await db.select({
+        baseCurrency: companies.baseCurrency,
+        supportedCurrencies: companies.supportedCurrencies,
+        exchangeRates: companies.exchangeRates,
+      }).from(companies).where(eq(companies.id, user.companyId)).limit(1);
+      return ok({ currency });
     }
 
     throw new Error('Choose a valid settings action.');

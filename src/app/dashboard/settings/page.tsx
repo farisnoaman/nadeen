@@ -28,6 +28,7 @@ import { Skeleton, useToast } from '@/components/ui';
 import { api, saveSessionToken } from '@/lib/client-api';
 import { useI18n } from '@/lib/i18n';
 import { AppTheme, useAppTheme } from '@/lib/theme';
+import { SUPPORTED_CURRENCIES } from '@/lib/currencies';
 
 type SettingsSection = 'profile' | 'workspace' | 'loyalty' | 'notifications' | 'appearance' | 'security';
 
@@ -64,6 +65,12 @@ type LoyaltySettings = {
   stats: { members:number; pointsIssued:number; rewardedRentals:number };
 };
 
+type CurrencySettings = {
+  baseCurrency: string;
+  supportedCurrencies: string[];
+  exchangeRates: Record<string, number>;
+};
+
 const defaultPreferences: Preferences = {
   emailNotifications: true,
   inAppNotifications: true,
@@ -92,9 +99,11 @@ export default function SettingsPage() {
   const [savingAppearance, setSavingAppearance] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
   const [passwords, setPasswords] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [currency, setCurrency] = useState<CurrencySettings | null>(null);
+  const [savingCurrency, setSavingCurrency] = useState(false);
 
   useEffect(() => {
-    api<{ profile: Profile; preferences: Preferences; loyalty:LoyaltySettings|null }>('/settings')
+    api<{ profile: Profile; preferences: Preferences; loyalty:LoyaltySettings|null; currency:CurrencySettings[]|null }>('/settings')
       .then(data => {
         setProfile(data.profile);
         setLoyalty(data.loyalty);
@@ -105,6 +114,9 @@ export default function SettingsPage() {
           companyCity: data.profile.companyCity || '',
         });
         setPreferences({ ...data.preferences, language: lang, theme });
+        setCurrency(Array.isArray(data.currency) && data.currency[0]
+          ? data.currency[0]
+          : { baseCurrency: 'USD', supportedCurrencies: ['USD'], exchangeRates: {} });
       })
       .catch(error => toast(error.message, true))
       .finally(() => setLoading(false));
@@ -237,6 +249,28 @@ export default function SettingsPage() {
     }
   };
 
+  const saveCurrency = async () => {
+    if (!currency) return;
+    setSavingCurrency(true);
+    try {
+      const data = await api<{ currency: CurrencySettings }>('/settings', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          action: 'currencies',
+          baseCurrency: currency.baseCurrency,
+          supportedCurrencies: currency.supportedCurrencies,
+          exchangeRates: currency.exchangeRates,
+        }),
+      });
+      setCurrency(data.currency ?? currency);
+      toast(t('settingsCurrenciesSaved'));
+    } catch (error: any) {
+      toast(error.message, true);
+    } finally {
+      setSavingCurrency(false);
+    }
+  };
+
   const togglePreference = (key: keyof Preferences) => {
     if (typeof preferences[key] !== 'boolean') return;
     setPreferences(current => ({ ...current, [key]: !current[key] }));
@@ -313,6 +347,7 @@ export default function SettingsPage() {
           )}
 
           {section === 'workspace' && profile.role === 'company' && (
+            <>
             <form onSubmit={saveProfile} className="settings-section-form">
               <SettingsHeader icon={Building2} title={t('settingsWorkspace')} text={t('settingsWorkspaceDescription')} />
               <div className="settings-workspace-banner">
@@ -334,6 +369,8 @@ export default function SettingsPage() {
               <div className="settings-workspace-note"><ShieldCheck /><span><strong>{t('settingsAdminOnly')}</strong><small>{t('settingsAdminOnlyText')}</small></span></div>
               <SettingsActions saving={savingProfile} label={t('settingsSaveWorkspace')} t={t} />
             </form>
+            {currency && <CurrencyRatesSection currency={currency} setCurrency={setCurrency} saving={savingCurrency} onSave={saveCurrency} t={t} />}
+            </>
           )}
 
           {section === 'loyalty' && profile.role === 'company' && loyalty && (
@@ -488,5 +525,87 @@ function SettingsActions({ saving, label, t, button = false, onClick }: {
         <Save />{saving ? t('saving') : label}
       </button>
     </footer>
+  );
+}
+
+function CurrencyRatesSection({ currency, setCurrency, saving, onSave, t }: {
+  currency: CurrencySettings;
+  setCurrency: (c: CurrencySettings) => void;
+  saving: boolean;
+  onSave: () => void;
+  t: (key: string) => string;
+}) {
+  const toggleSupported = (code: string) => {
+    if (code === currency.baseCurrency) return;
+    const has = currency.supportedCurrencies.includes(code);
+    const supportedCurrencies = has
+      ? currency.supportedCurrencies.filter(c => c !== code)
+      : [...currency.supportedCurrencies, code];
+    const exchangeRates = { ...currency.exchangeRates };
+    if (has) delete exchangeRates[code];
+    setCurrency({ ...currency, supportedCurrencies, exchangeRates });
+  };
+  const setBase = (code: string) => {
+    const supportedCurrencies = currency.supportedCurrencies.includes(code)
+      ? currency.supportedCurrencies
+      : [...currency.supportedCurrencies, code];
+    setCurrency({ ...currency, baseCurrency: code, supportedCurrencies });
+  };
+  const setRate = (code: string, value: string) => {
+    const n = Number(value);
+    setCurrency({ ...currency, exchangeRates: { ...currency.exchangeRates, [code]: Number.isFinite(n) ? n : 0 } });
+  };
+  const nonBase = currency.supportedCurrencies.filter(c => c !== currency.baseCurrency);
+  return (
+    <form onSubmit={(event) => { event.preventDefault(); onSave(); }} className="settings-section-form currency-rates-form">
+      <SettingsHeader icon={CircleDollarSign} title={t('settingsCurrencies')} text={t('settingsCurrenciesDescription')} />
+      <section className="currency-base-select">
+        <label>
+          {t('settingsBaseCurrency')}
+          <div><CircleDollarSign />
+            <select value={currency.baseCurrency} onChange={event => setBase(event.target.value)}>
+              {SUPPORTED_CURRENCIES.map(code => <option key={code} value={code}>{code}</option>)}
+            </select>
+          </div>
+        </label>
+      </section>
+      <section className="currency-supported-grid">
+        <header><div><strong>{t('settingsSupportedCurrencies')}</strong></div></header>
+        <div className="currency-supported-chips">
+          {SUPPORTED_CURRENCIES.map(code => (
+            <label key={code} className={`currency-chip ${currency.supportedCurrencies.includes(code) ? 'on' : ''}`}>
+              <input
+                type="checkbox"
+                checked={currency.supportedCurrencies.includes(code)}
+                disabled={code === currency.baseCurrency}
+                onChange={() => toggleSupported(code)}
+              />
+              <span>{code}</span>
+            </label>
+          ))}
+        </div>
+      </section>
+      <section className="currency-rates-grid">
+        <header><div><strong>{t('settingsExchangeRates')}</strong><small>{t('settingsExchangeRateFor')}</small></div></header>
+        <div className="currency-rate-inputs">
+          {nonBase.length > 0 ? nonBase.map(code => (
+            <label key={code}>
+              {code}
+              <div>
+                <input
+                  type="number"
+                  min="0.0001"
+                  step="0.0001"
+                  value={currency.exchangeRates[code] ?? 0}
+                  onChange={event => setRate(code, event.target.value)}
+                />
+              </div>
+            </label>
+          )) : <small>{t('settingsCurrenciesAdminNote')}</small>}
+        </div>
+      </section>
+      <div className="settings-workspace-note"><ShieldCheck /><span><strong>{t('settingsAdminOnly')}</strong><small>{t('settingsCurrenciesAdminNote')}</small></span></div>
+      <SettingsActions button onClick={onSave} saving={saving} label={t('settingsSaveCurrencies')} t={t} />
+    </form>
   );
 }
