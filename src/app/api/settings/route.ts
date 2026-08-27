@@ -115,6 +115,10 @@ export async function PATCH(request: Request) {
         if (!['light', 'dark'].includes(body.theme)) throw new Error('Choose a valid theme.');
         changes.theme = body.theme;
       }
+      if (body.currency !== undefined) {
+        if (typeof body.currency !== 'string' || !body.currency) throw new Error('Choose a valid display currency.');
+        changes.currency = body.currency;
+      }
       await ensurePreferences(db, user.id);
       const [preferences] = await db.update(userSettings).set(changes)
         .where(eq(userSettings.userId, user.id)).returning();

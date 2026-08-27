@@ -34,10 +34,11 @@ import {
 import { createContext, useContext, useEffect, useState } from 'react';
 import { api } from '@/lib/client-api';
 import { useI18n } from '@/lib/i18n';
+import { useCurrency } from '@/lib/currency-provider';
 import { useAppTheme } from '@/lib/theme';
 import { GlobalSearch } from './global-search';
 import { Avatar, Skeleton } from './ui';
-import { LanguageToggle, ThemeToggle } from './theme-controls';
+import { CurrencyToggle, LanguageToggle, ThemeToggle } from './theme-controls';
 
 type User = {
   id: number;
@@ -64,8 +65,9 @@ const UserCtx = createContext<User | null>(null);
 export const useCurrentUser = () => useContext(UserCtx);
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
-  const { lang, setLang, t } = useI18n();
-  const { theme, setTheme } = useAppTheme();
+const { lang, setLang, t } = useI18n();
+const { currency, setCurrency } = useCurrency();
+const { theme, setTheme } = useAppTheme();
   const path = usePathname();
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
@@ -126,10 +128,11 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!user) return;
-    api<{ preferences: { language: 'en' | 'ar'; theme: 'light' | 'dark' } }>('/settings')
+    api<{ preferences: { language: 'en' | 'ar'; theme: 'light' | 'dark'; currency?: string } }>('/settings')
       .then(data => {
         if (data.preferences.language !== lang) setLang(data.preferences.language);
         if (data.preferences.theme !== theme) setTheme(data.preferences.theme);
+        if (data.preferences.currency && data.preferences.currency !== currency) setCurrency(data.preferences.currency);
       })
       .catch(() => undefined);
   }, [user?.id]);
@@ -308,7 +311,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               </Link>}
               <Link href="/dashboard/settings" className={active('/dashboard/settings') ? 'active' : ''} onClick={() => setMobile(false)} data-sidebar-label={t('settings')} aria-label={t('settings')}><Settings /><span>{t('settings')}</span></Link>
             </nav>
-            <div className="side-theme"><LanguageToggle /><ThemeToggle label /></div>
+            <div className="side-theme"><CurrencyToggle /><LanguageToggle /><ThemeToggle label /></div>
             <button type="button" className="side-user" data-sidebar-label={user.name} aria-label={user.name} onClick={() => { setProfile(!profile); setNotificationOpen(false); }}>
               <Avatar name={user.name} initials={user.avatar} />
               <div><strong>{user.name}</strong><small>{user.role === 'platform_admin' ? t('platformAdmin') : user.role === 'company' ? t('administrator') : t('verifiedDriver')}</small></div>

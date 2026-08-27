@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { ArrowRight, CarFront, Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import { useI18n } from '@/lib/i18n';
-import { LanguageToggle, ThemeToggle } from './theme-controls';
+import { CurrencyToggle, LanguageToggle, ThemeToggle } from './theme-controls';
 
 export function PublicSiteHeader() {
   const {t}=useI18n();
@@ -16,7 +16,7 @@ export function PublicSiteHeader() {
       <Link href="/terms" onClick={()=>setOpen(false)}>{t('terms')}</Link>
       <Link href="/support" onClick={()=>setOpen(false)}>{t('support')}</Link>
     </nav>
-    <div className="nav-actions"><LanguageToggle/><ThemeToggle/><Link className="btn ghost hide-mobile" href="/login">{t('signIn')}</Link><Link className="btn primary hide-mobile" href="/register?role=renter">{t('getStarted')}<ArrowRight/></Link><button type="button" className="nav-menu" onClick={()=>setOpen(!open)} aria-label={t(open?'close':'openMenu')} aria-expanded={open} aria-controls="public-site-navigation">{open?<X/>:<Menu/>}</button></div>
+    <div className="nav-actions"><CurrencyToggle/><LanguageToggle/><ThemeToggle/><Link className="btn ghost hide-mobile" href="/login">{t('signIn')}</Link><Link className="btn primary hide-mobile" href="/register?role=renter">{t('getStarted')}<ArrowRight/></Link><button type="button" className="nav-menu" onClick={()=>setOpen(!open)} aria-label={t(open?'close':'openMenu')} aria-expanded={open} aria-controls="public-site-navigation">{open?<X/>:<Menu/>}</button></div>
   </header>;
 }
 
