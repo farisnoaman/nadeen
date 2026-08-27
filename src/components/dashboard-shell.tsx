@@ -17,6 +17,7 @@ import {
   CreditCard,
   FileCheck2,
   Gauge,
+  Heart,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -183,6 +184,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const renterNav = [
     ['/dashboard', 'overview', LayoutDashboard],
     ['/dashboard/browse', 'browse', Compass],
+    ['/dashboard/saved', 'savedVehicles', Heart],
     ['/dashboard/rentals', 'rentals', CalendarDays],
     ['/dashboard/reports', 'reports', BarChart3],
   ] as const;

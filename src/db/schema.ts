@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { boolean, doublePrecision, index, integer, jsonb, pgTable, serial, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
+import { boolean, doublePrecision, index, integer, jsonb, pgTable, primaryKey, serial, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
 import type { ProtectionPackage, ProtectionTier } from '@/lib/insurance';
 
 export type PickupLocationOption = { city: string; site: string };
@@ -513,6 +513,15 @@ export const notifications = pgTable('notifications', {
   index('notifications_user_idx').on(table.userId),
   index('notifications_company_idx').on(table.companyId),
   index('notifications_read_idx').on(table.readAt),
+]);
+
+export const savedVehicles = pgTable('saved_vehicles', {
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  vehicleId: integer('vehicle_id').notNull().references(() => vehicles.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  primaryKey({ columns: [table.userId, table.vehicleId] }),
+  index('saved_vehicles_vehicle_idx').on(table.vehicleId),
 ]);
 
 export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;

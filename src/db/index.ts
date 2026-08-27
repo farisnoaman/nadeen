@@ -408,8 +408,15 @@ SELECT ticket.company_id, 'support_message', ticket.subject,
   '/dashboard/support?conversation=' || ticket.id::text, 'support_ticket', ticket.id,
   'support-ticket-' || ticket.id::text, ticket.updated_at
 FROM support_tickets AS ticket
-WHERE ticket.company_id IS NOT NULL
+ WHERE ticket.company_id IS NOT NULL
 ON CONFLICT (dedupe_key) DO NOTHING;
+CREATE TABLE IF NOT EXISTS saved_vehicles (
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  vehicle_id INTEGER NOT NULL REFERENCES vehicles(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (user_id, vehicle_id)
+);
+CREATE INDEX IF NOT EXISTS saved_vehicles_vehicle_idx ON saved_vehicles(vehicle_id);
 `;
 
 type Store = { promise?: Promise<any>; db?: any; raw?: any; imagesReady?: Promise<void> };
@@ -483,6 +490,6 @@ export async function getDb() {
 
 export async function resetDatabase() {
   const db = await getDb();
-  await db.execute(sql.raw('TRUNCATE TABLE phone_verification_codes, public_support_requests, company_verification_requests, platform_payments, kilometer_policy_vehicles, kilometer_policies, notifications, user_settings, support_messages, support_tickets, maintenance_work_orders, maintenance_items, vehicle_condition_logs, loyalty_point_ledger, promotion_vehicles, insurance_package_vehicles, rental_services, rentals, loyalty_levels, loyalty_programs, insurance_packages, premium_services, promotions, vehicles, users, companies RESTART IDENTITY CASCADE'));
+  await db.execute(sql.raw('TRUNCATE TABLE phone_verification_codes, public_support_requests, company_verification_requests, platform_payments, kilometer_policy_vehicles, kilometer_policies, notifications, saved_vehicles, user_settings, support_messages, support_tickets, maintenance_work_orders, maintenance_items, vehicle_condition_logs, loyalty_point_ledger, promotion_vehicles, insurance_package_vehicles, rental_services, rentals, loyalty_levels, loyalty_programs, insurance_packages, premium_services, promotions, vehicles, users, companies RESTART IDENTITY CASCADE'));
   await seedDatabase(db);
 }
