@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { VehicleImageCarousel } from '@/components/vehicle-image-carousel';
 import { Empty, Skeleton } from '@/components/ui';
+import { BookingModal } from '@/components/booking-modal';
 import { api } from '@/lib/client-api';
 import { money } from '@/lib/format';
 import { useI18n } from '@/lib/i18n';
@@ -34,8 +35,36 @@ export default function BrowsePage() {
   const [filters, setFilters] = useState<Filters>(emptyFilters);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [booking, setBooking] = useState<any>(null);
+  const [account, setAccount] = useState<any>(null);
+  const [favorites, setFavorites] = useState<Set<number>>(new Set());
 
-  useEffect(() => { api('/vehicles').then((data:any) => setVehicles(data.vehicles)).finally(() => setLoading(false)); }, []);
+  useEffect(() => {
+    api('/vehicles').then((data:any) => setVehicles(data.vehicles)).finally(() => setLoading(false));
+    api('/auth/me?optional=1').then((data:any) => {
+      setAccount(data.user);
+      if (data.user?.role === 'renter') {
+        api('/favorites').then((fav:any) => setFavorites(new Set<number>(fav.ids))).catch(() => undefined);
+      }
+    }).catch(() => undefined);
+  }, []);
+
+  const toggleFavorite = async (id: number, e?: React.MouseEvent) => {
+    if (e) { e.stopPropagation(); e.preventDefault(); }
+    if (!account || account.role !== 'renter') {
+      router.push(`/login?role=renter&next=${encodeURIComponent('/dashboard/browse')}`);
+      return;
+    }
+    const next = new Set(favorites);
+    const willSave = !next.has(id);
+    if (willSave) next.add(id); else next.delete(id);
+    setFavorites(next);
+    try {
+      if (willSave) await api('/favorites', { method: 'POST', body: JSON.stringify({ vehicleId: id }) });
+      else await api('/favorites', { method: 'DELETE', body: JSON.stringify({ vehicleId: id }) });
+    } catch {
+      setFavorites(prev => { const revert = new Set(prev); if (willSave) revert.delete(id); else revert.add(id); return revert; });
+    }
+  };
   const setFilter = (key: keyof Filters, value: string) => setFilters(current => ({ ...current, [key]: value }));
   const chooseMake = (make: string) => setFilters(current => ({ ...current, make, model:'All', trim:'All' }));
   const chooseModel = (model: string) => setFilters(current => ({ ...current, model, trim:'All' }));
@@ -90,6 +119,7 @@ export default function BrowsePage() {
       <fieldset><legend>{t('estimatedPrice')} · {t(rate)}</legend><input type="number" min="0" placeholder={t('minimumPrice')} value={filters.priceMin} onChange={event => setFilter('priceMin',event.target.value)}/><span>—</span><input type="number" min="0" placeholder={t('maximumPrice')} value={filters.priceMax} onChange={event => setFilter('priceMax',event.target.value)}/></fieldset>
     </div></section>}
     <div className="filter-results"><span>{shown.length} {t('vehiclesFound')}</span>{activeFilters > 0 && <button onClick={clearAll}>{t('clearAll')}</button>}</div>
-    {loading ? <Skeleton cards={6}/> : shown.length === 0 ? <Empty icon={CarFront} title={t('noCars')} text={t('tryDifferentFilters')} action={clearAll} label={t('clearFilters')}/> : <div className="vehicle-grid browse-grid">{shown.map(vehicle => <article className="vehicle-card marketplace-card" key={vehicle.id} onClick={() => router.push(`/dashboard/browse/${vehicle.id}`)}><div className="vehicle-photo"><VehicleImageCarousel image={vehicle.image} images={vehicle.images} variant="card" alt={`${vehicle.make} ${vehicle.model}`}/><button className="save-car" onClick={e => e.stopPropagation()}><Heart/></button><span className="rating-badge"><Star fill="currentColor"/>{vehicle.rating}</span>{vehicle.promotions?.[0] && <span className="promo-tag"><Zap/>{vehicle.promotions[0].type === 'percentage' ? `${vehicle.promotions[0].value}% ${t('off')}` : `${money(vehicle.promotions[0].value)} ${t('off')}`}</span>}</div><div className="vehicle-body"><small>{vehicle.companyName}</small><div className="vehicle-title"><div><h3>{vehicle.make} {vehicle.model}</h3><p>{vehicle.year} · {vehicle.trim} · {t(vehicle.bodyType || vehicle.category)}</p></div></div><div className="car-specs"><span><Fuel/>{t(vehicle.fuel)}</span><span><UserRound/>{vehicle.seats} {t('seats')}</span><span><Gauge/>{t(vehicle.gearbox)}</span><span><Gauge/>{Number(vehicle.dailyKilometerAllowance).toLocaleString()} {t('kilometers')}/{t('day')}</span></div><div className="marketplace-locations"><MapPin/><span>{[...new Set((vehicle.pickupLocations||[]).map((location:any)=>location.city))].join(' · ')}</span><small>{(vehicle.pickupLocations||[]).length} {t('pickupSites')}</small></div><footer><span>{t('from')} <strong>{money(vehicle[fields[rate]])}</strong> / {t(rate)}</span><div><Link href={`/dashboard/browse/${vehicle.id}`} onClick={e => e.stopPropagation()} className="round-link" aria-label={t('viewDetails')}><Eye/></Link><button className="btn primary small" onClick={e => { e.stopPropagation(); setBooking(vehicle); }}>{t('rentNow')}</button></div></footer></div></article>)}</div>}
+    {loading ? <Skeleton cards={6}/> : shown.length === 0 ? <Empty icon={CarFront} title={t('noCars')} text={t('tryDifferentFilters')} action={clearAll} label={t('clearFilters')}/> : <div className="vehicle-grid browse-grid">{shown.map(vehicle => <article className="vehicle-card marketplace-card" key={vehicle.id} onClick={() => router.push(`/dashboard/browse/${vehicle.id}`)}><div className="vehicle-photo"><VehicleImageCarousel image={vehicle.image} images={vehicle.images} variant="card" alt={`${vehicle.make} ${vehicle.model}`}/><button type="button" className={`save-car${favorites.has(vehicle.id) ? ' active' : ''}`} aria-pressed={favorites.has(vehicle.id)} aria-label={favorites.has(vehicle.id) ? t('removeFromSaved') : t('addToSaved')} onClick={(e) => toggleFavorite(vehicle.id, e)}>{favorites.has(vehicle.id) ? <Heart fill="currentColor" /> : <Heart />}</button><span className="rating-badge"><Star fill="currentColor"/>{vehicle.rating}</span>{vehicle.promotions?.[0] && <span className="promo-tag"><Zap/>{vehicle.promotions[0].type === 'percentage' ? `${vehicle.promotions[0].value}% ${t('off')}` : `${money(vehicle.promotions[0].value)} ${t('off')}`}</span>}</div><div className="vehicle-body"><small>{vehicle.companyName}</small><div className="vehicle-title"><div><h3>{vehicle.make} {vehicle.model}</h3><p>{vehicle.year} · {vehicle.trim} · {t(vehicle.bodyType || vehicle.category)}</p></div></div><div className="car-specs"><span><Fuel/>{t(vehicle.fuel)}</span><span><UserRound/>{vehicle.seats} {t('seats')}</span><span><Gauge/>{t(vehicle.gearbox)}</span><span><Gauge/>{Number(vehicle.dailyKilometerAllowance).toLocaleString()} {t('kilometers')}/{t('day')}</span></div><div className="marketplace-locations"><MapPin/><span>{[...new Set((vehicle.pickupLocations||[]).map((location:any)=>location.city))].join(' · ')}</span><small>{(vehicle.pickupLocations||[]).length} {t('pickupSites')}</small></div><footer><span>{t('from')} <strong>{money(vehicle[fields[rate]])}</strong> / {t(rate)}</span><div><Link href={`/dashboard/browse/${vehicle.id}`} onClick={e => e.stopPropagation()} className="round-link" aria-label={t('viewDetails')}><Eye/></Link><button className="btn primary small" onClick={e => { e.stopPropagation(); setBooking(vehicle); }}>{t('rentNow')}</button></div></footer></div></article>)}    </div>}
+    {booking && <BookingModal vehicle={booking} onClose={() => setBooking(null)} />}
   </>;
 }

@@ -9,6 +9,7 @@ import { api } from '@/lib/client-api';
 import { money } from '@/lib/format';
 import { useI18n } from '@/lib/i18n';
 import { VehicleImageCarousel } from '@/components/vehicle-image-carousel';
+import { BookingModal } from '@/components/booking-modal';
 
 type Rate = 'hour' | 'day' | 'week' | 'month';
 type Filters = {
@@ -35,11 +36,45 @@ export default function BrowsePage() {
   const [filters, setFilters] = useState<Filters>(emptyFilters);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [account, setAccount] = useState<any>(null);
+  const [booking, setBooking] = useState<any>(null);
+  const [favorites, setFavorites] = useState<Set<number>>(new Set());
+
+  // Load favorites from local storage on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('ff_favorites');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          setFavorites(new Set<number>(parsed));
+        }
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  // Toggle favorite & sync with local storage
+  const toggleFavorite = (e: React.MouseEvent, id: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setFavorites(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      try {
+        localStorage.setItem('ff_favorites', JSON.stringify(Array.from(next)));
+      } catch { /* ignore */ }
+      return next;
+    });
+  };
 
   useEffect(() => {
     api('/vehicles').then((data:any) => setVehicles(data.vehicles)).finally(() => setLoading(false));
     api('/auth/me?optional=1').then((data:any) => setAccount(data.user)).catch(() => undefined);
   }, []);
+
   const setFilter = (key: keyof Filters, value: string) => setFilters(current => ({ ...current, [key]: value }));
   const chooseMake = (make: string) => setFilters(current => ({ ...current, make, model:'All', trim:'All' }));
   const chooseModel = (model: string) => setFilters(current => ({ ...current, model, trim:'All' }));
@@ -80,11 +115,17 @@ export default function BrowsePage() {
   }).sort((a,b) => sort === 'price' ? a[fields[rate]] - b[fields[rate]] : b.year - a.year), [vehicles, category, filters, search, sort, rate, requestedPromotion, requestedCompany]);
 
   const clearAll = () => { setFilters(emptyFilters); setCategory('All'); setSearch(''); if (linkedFilter) router.replace('/browse'); };
-  const rentVehicle = (vehicleId:number) => {
-    if (account?.role === 'renter') return router.push(`/dashboard/browse/${vehicleId}?rent=1`);
-    const destination = `/dashboard/browse/${vehicleId}?rent=1`;
-    router.push(`/login?role=renter&next=${encodeURIComponent(destination)}`);
+
+  const openRent = (e: React.MouseEvent, vehicle: any) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!account || account.role !== 'renter') {
+      router.push('/login?role=renter&next=' + encodeURIComponent('/dashboard/browse/' + vehicle.id + '?rent=1'));
+      return;
+    }
+    setBooking(vehicle);
   };
+
   return <div className="public-marketplace">
     <header className="landing-nav"><Link href="/" className="logo"><span><CarFront/></span>FleetFlow</Link><nav><Link href="/browse">{t('marketplace')}</Link></nav><div className="nav-actions"><LanguageToggle/><ThemeToggle/>{account?<Link className="btn primary" href={account.role==='renter'?'/dashboard/browse':'/dashboard'}>{t('dashboard')}</Link>:<><Link className="btn ghost" href="/login">{t('signIn')}</Link><Link className="btn primary" href="/register?role=renter">{t('getStarted')}</Link></>}</div></header>
     <main className="public-marketplace-content">
@@ -101,7 +142,72 @@ export default function BrowsePage() {
       <fieldset><legend>{t('estimatedPrice')} · {t(rate)}</legend><input type="number" min="0" placeholder={t('minimumPrice')} value={filters.priceMin} onChange={event => setFilter('priceMin',event.target.value)}/><span>—</span><input type="number" min="0" placeholder={t('maximumPrice')} value={filters.priceMax} onChange={event => setFilter('priceMax',event.target.value)}/></fieldset>
     </div></section>}
     <div className="filter-results"><span>{shown.length} {t('vehiclesFound')}</span>{activeFilters > 0 && <button onClick={clearAll}>{t('clearAll')}</button>}</div>
-    {loading ? <Skeleton cards={6}/> : shown.length === 0 ? <Empty icon={CarFront} title={t('noCars')} text={t('tryDifferentFilters')} action={clearAll} label={t('clearFilters')}/> : <div className="vehicle-grid browse-grid">{shown.map(vehicle => <article className="vehicle-card marketplace-card" key={vehicle.id}><div className="vehicle-photo"><VehicleImageCarousel image={vehicle.image} images={vehicle.images} variant="card" alt={`${vehicle.make} ${vehicle.model}`}/><button className="save-car"><Heart/></button><span className="rating-badge"><Star fill="currentColor"/>{vehicle.rating}</span>{vehicle.promotions?.[0] && <span className="promo-tag"><Zap/>{vehicle.promotions[0].type === 'percentage' ? `${vehicle.promotions[0].value}% ${t('off')}` : `${money(vehicle.promotions[0].value)} ${t('off')}`}</span>}</div><div className="vehicle-body"><small>{vehicle.companyName}</small><div className="vehicle-title"><div><h3>{vehicle.make} {vehicle.model}</h3><p>{vehicle.year} · {vehicle.trim} · {t(vehicle.bodyType || vehicle.category)}</p></div></div><div className="car-specs"><span><Fuel/>{t(vehicle.fuel)}</span><span><UserRound/>{vehicle.seats} {t('seats')}</span><span><Gauge/>{t(vehicle.gearbox)}</span><span><Gauge/>{Number(vehicle.dailyKilometerAllowance).toLocaleString()} {t('kilometers')}/{t('day')}</span></div><div className="marketplace-locations"><MapPin/><span>{[...new Set((vehicle.pickupLocations||[]).map((location:any)=>location.city))].join(' · ')}</span><small>{(vehicle.pickupLocations||[]).length} {t('pickupSites')}</small></div><footer><span>{t('from')} <strong>{money(vehicle[fields[rate]])}</strong> / {t(rate)}</span><div><Link href={`/browse/${vehicle.id}`} className="round-link" title="View vehicle details" aria-label="View vehicle details"><Eye/></Link><button className="btn primary small" onClick={() => rentVehicle(vehicle.id)}>{t('rentNow')}</button></div></footer></div></article>)}</div>}
+    {loading ? <Skeleton cards={6}/> : shown.length === 0 ? <Empty icon={CarFront} title={t('noCars')} text={t('tryDifferentFilters')} action={clearAll} label={t('clearFilters')}/> : <div className="vehicle-grid browse-grid">{shown.map(vehicle => (
+      <article className="vehicle-card marketplace-card" key={vehicle.id} onClick={() => router.push(`/browse/${vehicle.id}`)}>
+
+        <div className="vehicle-photo">
+          <div style={{ position: 'relative', zIndex: 50 }}>
+            <VehicleImageCarousel image={vehicle.image} images={vehicle.images} variant="card" alt={`${vehicle.make} ${vehicle.model}`}/>
+          </div>
+          <button
+            type="button"
+            className={`save-car${favorites.has(vehicle.id) ? ' active' : ''}`}
+            aria-pressed={favorites.has(vehicle.id)}
+            aria-label={favorites.has(vehicle.id) ? 'Remove from favorites' : 'Add to favorites'}
+            onClick={(e) => toggleFavorite(e, vehicle.id)}
+            style={{ position: 'absolute', zIndex: 60 }}
+          >
+            {favorites.has(vehicle.id) ? <Heart fill="currentColor" /> : <Heart />}
+          </button>
+          <span className="rating-badge"><Star fill="currentColor"/>{vehicle.rating}</span>
+          {vehicle.promotions?.[0] && <span className="promo-tag"><Zap/>{vehicle.promotions[0].type === 'percentage' ? `${vehicle.promotions[0].value}% ${t('off')}` : `${money(vehicle.promotions[0].value)} ${t('off')}`}</span>}
+        </div>
+
+        {/* NEW FIX: Lifts the body content above the .card-stretch layer */}
+        <div className="vehicle-body" style={{ position: 'relative', zIndex: 2 }}>
+          <small>{vehicle.companyName}</small>
+          <div className="vehicle-title">
+            <div>
+              <h3>{vehicle.make} {vehicle.model}</h3>
+              <p>{vehicle.year} · {vehicle.trim} · {t(vehicle.bodyType || vehicle.category)}</p>
+            </div>
+          </div>
+          <div className="car-specs">
+            <span><Fuel/>{t(vehicle.fuel)}</span>
+            <span><UserRound/>{vehicle.seats} {t('seats')}</span>
+            <span><Gauge/>{t(vehicle.gearbox)}</span>
+            <span><Gauge/>{Number(vehicle.dailyKilometerAllowance).toLocaleString()} {t('kilometers')}/{t('day')}</span>
+          </div>
+          <div className="marketplace-locations">
+            <MapPin/>
+            <span>{[...new Set((vehicle.pickupLocations||[]).map((location:any)=>location.city))].join(' · ')}</span>
+            <small>{(vehicle.pickupLocations||[]).length} {t('pickupSites')}</small>
+          </div>
+
+          <footer style={{ position: 'relative', zIndex: 3 }}>
+            <span>{t('from')} <strong>{money(vehicle[fields[rate]])}</strong> / {t(rate)}</span>
+            <div style={{ position: 'relative', zIndex: 99, display: 'flex', gap: '0.5rem' }}>
+              <Link
+                href={`/browse/${vehicle.id}`}
+                className="round-link"
+                title="View vehicle details"
+                aria-label="View vehicle details"
+              >
+                <Eye/>
+              </Link>
+              <button
+                type="button"
+                className="btn primary small"
+                onClick={(e) => openRent(e, vehicle)}
+              >
+                {t('rentNow')}
+              </button>
+            </div>
+          </footer>
+        </div>
+      </article>
+    ))}</div>}
     </main>
+    {booking && <BookingModal vehicle={booking} onClose={() => setBooking(null)} />}
   </div>;
 }
