@@ -32,7 +32,15 @@ export async function GET(request: Request) {
       );
       conditions.push(or(...searchable));
     }
-    const rows = await db.select({ vehicle: vehicles, companyName: companies.name }).from(vehicles)
+    const rows = await db.select({
+      vehicle: vehicles,
+      companyName: companies.name,
+      companyCurrency: {
+        baseCurrency: companies.baseCurrency,
+        supportedCurrencies: companies.supportedCurrencies,
+        exchangeRates: companies.exchangeRates,
+      },
+    }).from(vehicles)
       .innerJoin(companies, eq(vehicles.companyId, companies.id))
       .where(and(...conditions)).orderBy(desc(vehicles.createdAt));
     const companyIds = [...new Set(rows.map((row: any) => row.vehicle.companyId))];
@@ -43,6 +51,7 @@ export async function GET(request: Request) {
       const marketplaceVehicle = {
         ...vehicle,
         companyName: row.companyName,
+        companyCurrency: row.companyCurrency,
         pickupLocations: normalizePickupLocations(vehicle.pickupLocations, vehicle.location),
         protectionPackages: normalizeProtectionPackages(vehicle.protectionPackages, vehicle.insuranceDeductible),
         promotions: promoRows.filter((promo: any) => promo.companyId === vehicle.companyId
