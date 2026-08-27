@@ -5,6 +5,7 @@ import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { getDb } from '@/db';
 import { companies, rentals, rentalServices, users, vehicles } from '@/db/schema';
 import { getSession } from './auth';
+import { formatMoney } from './currencies';
 import { rentalDocumentStage, rentalDocumentTitle } from './rental-document';
 
 export async function loadInvoice(rentalId: number, token?: string | null) {
@@ -122,7 +123,7 @@ const pdfTranslations: Record<string, string> = {
   third_party: 'مسؤولية تجاه الغير', comprehensive: 'تأمين شامل',
 };
 
-const money = (value: number, locale: 'en' | 'ar') => locale === 'ar' ? `${Number(value).toFixed(2)} $` : `$${Number(value).toFixed(2)}`;
+const money = (value: number, locale: 'en' | 'ar' = 'en') => formatMoney(value, 'USD', locale);
 const date = (value: Date | string, locale: 'en' | 'ar') => new Intl.DateTimeFormat(locale === 'ar' ? 'ar' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
 
 export async function createInvoicePdf(invoice: any, locale: 'en' | 'ar' = 'ar') {
