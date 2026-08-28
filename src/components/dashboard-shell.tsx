@@ -311,7 +311,7 @@ const { theme, setTheme } = useAppTheme();
               </Link>}
               <Link href="/dashboard/settings" className={active('/dashboard/settings') ? 'active' : ''} onClick={() => setMobile(false)} data-sidebar-label={t('settings')} aria-label={t('settings')}><Settings /><span>{t('settings')}</span></Link>
             </nav>
-            <div className="side-theme"><CurrencyToggle /><LanguageToggle /><ThemeToggle label /></div>
+            <div className="side-theme"><CurrencyToggle /><LanguageToggle /><ThemeToggle /></div>
             <button type="button" className="side-user" data-sidebar-label={user.name} aria-label={user.name} onClick={() => { setProfile(!profile); setNotificationOpen(false); }}>
               <Avatar name={user.name} initials={user.avatar} />
               <div><strong>{user.name}</strong><small>{user.role === 'platform_admin' ? t('platformAdmin') : user.role === 'company' ? t('administrator') : t('verifiedDriver')}</small></div>

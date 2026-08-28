@@ -1,8 +1,10 @@
 'use client';
 
-import { Coins, Languages, Moon, Sun } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { Check, ChevronDown, Languages, Moon, Sun } from 'lucide-react';
 import { api } from '@/lib/client-api';
-import { SUPPORTED_CURRENCIES } from '@/lib/currencies';
+import { CURRENCY_META, SUPPORTED_CURRENCIES, type CurrencyCode } from '@/lib/currencies';
 import { useCurrency } from '@/lib/currency-provider';
 import { useI18n } from '@/lib/i18n';
 import { useAppTheme } from '@/lib/theme';
@@ -50,19 +52,104 @@ export function LanguageToggle() {
 
 export function CurrencyToggle({ currencies }: { currencies?: string[] }) {
   const { currency, setCurrency } = useCurrency();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
   const options = currencies && currencies.length ? currencies : SUPPORTED_CURRENCIES;
   const value = options.includes(currency) ? currency : options[0];
-  return (
-    <label className="currency-toggle" title={t('displayCurrency')}>
-      <Coins size={16} />
-      <select
-        value={value}
-        onChange={event => setCurrency(event.target.value)}
-        aria-label={t('displayCurrency')}
+  const meta = CURRENCY_META[value as CurrencyCode];
+  const symbol = meta?.symbol ?? '$';
+
+  const computePosition = (rect: DOMRect) => {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const margin = 8;
+    const menuW = 200;
+    const estimatedH = Math.min(392, vh - margin * 2);
+    let left = rect.right - menuW;
+    if (left < margin) left = margin;
+    if (left + menuW > vw - margin) left = vw - menuW - margin;
+    let top = rect.bottom + 6;
+    if (top + estimatedH > vh - margin && rect.top - estimatedH - 6 >= margin) {
+      top = rect.top - estimatedH - 6;
+    }
+    if (top < margin) top = margin;
+    if (top + estimatedH > vh - margin) {
+      top = Math.max(margin, vh - margin - estimatedH);
+    }
+    return { top, left };
+  };
+
+  const handleOpen = () => {
+    if (open) {
+      setOpen(false);
+      return;
+    }
+    if (wrapRef.current) {
+      setPos(computePosition(wrapRef.current.getBoundingClientRect()));
+    }
+    setOpen(true);
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    const reposition = () => {
+      if (wrapRef.current) setPos(computePosition(wrapRef.current.getBoundingClientRect()));
+    };
+    window.addEventListener('scroll', reposition, true);
+    window.addEventListener('resize', reposition);
+    return () => {
+      window.removeEventListener('scroll', reposition, true);
+      window.removeEventListener('resize', reposition);
+    };
+  }, [open]);
+
+  const menu = open && pos ? (
+    <>
+      <div className="currency-dropdown-scrim" onClick={() => setOpen(false)} />
+      <div
+        className="currency-dropdown-menu"
+        style={{ top: pos.top, left: pos.left }}
       >
-        {options.map(code => <option key={code} value={code}>{code}</option>)}
-      </select>
-    </label>
+        {options.map(code => {
+          const itemMeta = CURRENCY_META[code as CurrencyCode];
+          const itemSymbol = itemMeta?.symbol ?? code;
+          const label = lang === 'ar' ? itemMeta?.labelAr : itemMeta?.labelEn;
+          return (
+            <button
+              key={code}
+              type="button"
+              className={`currency-dropdown-item ${code === value ? 'active' : ''}`}
+              onClick={() => { setCurrency(code); setOpen(false); }}
+            >
+              <span className="currency-dropdown-item-symbol">{itemSymbol}</span>
+              <div className="currency-dropdown-item-info">
+                <strong>{code}</strong>
+                <small>{label}</small>
+              </div>
+              {code === value && <Check size={14} />}
+            </button>
+          );
+        })}
+      </div>
+    </>
+  ) : null;
+
+  return (
+    <div className="currency-dropdown" ref={wrapRef} title={t('displayCurrency')}>
+      <button
+        type="button"
+        className={`currency-dropdown-trigger ${open ? 'open' : ''}`}
+        onClick={handleOpen}
+        aria-label={t('displayCurrency')}
+        aria-expanded={open}
+      >
+        <span className="currency-dropdown-symbol">{symbol}</span>
+        <span className="currency-dropdown-code">{value}</span>
+        <ChevronDown size={12} />
+      </button>
+      {typeof document !== 'undefined' ? createPortal(menu, document.body) : null}
+    </div>
   );
 }
