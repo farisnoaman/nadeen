@@ -12,6 +12,7 @@ import { useCurrency } from '@/lib/currency-provider';
 import { useI18n } from '@/lib/i18n';
 import { VehicleImageCarousel } from '@/components/vehicle-image-carousel';
 import { BookingModal } from '@/components/booking-modal';
+import { CitySearch } from '@/components/city-search';
 
 type Rate = 'hour' | 'day' | 'week' | 'month';
 type Filters = {
@@ -132,7 +133,7 @@ export default function BrowsePage() {
   return <div className="public-marketplace">
     <header className="landing-nav"><Link href="/" className="logo"><span><CarFront/></span>FleetFlow</Link><nav><Link href="/browse">{t('marketplace')}</Link></nav><div className="nav-actions"><LanguageToggle/><ThemeToggle/>{account?<Link className="btn primary" href={account.role==='renter'?'/dashboard/browse':'/dashboard'}>{t('dashboard')}</Link>:<><Link className="btn ghost" href="/login">{t('signIn')}</Link><Link className="btn primary" href="/register?role=renter">{t('getStarted')}</Link></>}</div></header>
     <main className="public-marketplace-content">
-    <section className="browse-hero"><div><span className="eyebrow">{vehicles.length} {t('liveVehicles')}</span><h2>{t('findDrive')}</h2><p>{t('findDriveText')}</p></div><div className="browse-location"><MapPin/><label><small>{t('pickupCity')}</small><select value={filters.city} onChange={event=>setFilter('city',event.target.value)}><option value="All">{t('allPickupCities')}</option>{pickupCities.map(city=><option value={city} key={city}>{city}</option>)}</select></label><button type="button" aria-label={t('searchCars')}><Search/></button></div></section>
+    <section className="browse-hero"><div><span className="eyebrow">{vehicles.length} {t('liveVehicles')}</span><h2>{t('findDrive')}</h2><p>{t('findDriveText')}</p></div><div className="browse-location"><MapPin/><label><small>{t('pickupCity')}</small><CitySearch cities={pickupCities} value={filters.city} onChange={value=>setFilter('city',value)} allLabel={t('allPickupCities')} placeholder={t('searchCars')} /></label><button type="button" aria-label={t('searchCars')}><Search/></button></div></section>
     <div className="category-scroll">{categories.map(item => <button className={category === item ? 'active' : ''} onClick={() => setCategory(item)} key={item}>{t(item)}</button>)}</div>
     <div className="market-filter"><label><Search/><input placeholder={t('searchCars')} value={search} onChange={event => setSearch(event.target.value)}/></label><div><button className={`btn secondary filter-toggle ${filtersOpen ? 'active' : ''}`} onClick={() => setFiltersOpen(value => !value)}><SlidersHorizontal/>{t('filters')}{activeFilters > 0 && <span>{activeFilters}</span>}</button><select value={sort} onChange={event => setSort(event.target.value)}><option value="price">{t('priceLow')}</option><option value="year">{t('newest')}</option></select><div className="rate-switch">{(['hour','day','week','month'] as Rate[]).map(item => <button className={rate === item ? 'active' : ''} onClick={() => setRate(item)} key={item}>{t(item)}</button>)}</div></div></div>
     {filtersOpen && <section className="advanced-vehicle-filters panel"><header><div><h3>{t('vehicleFilters')}</h3><p>{t('vehicleFiltersText')}</p></div>{activeFilters > 0 && <button onClick={clearAll}><X/>{t('clearFilters')}</button>}</header><div className="vehicle-filter-grid">
