@@ -1,5 +1,5 @@
 'use client';
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { api } from '@/lib/client-api';
 
 type CurrencyContextValue = {
@@ -21,13 +21,22 @@ function cookieAttributes() {
 }
 
 export function CurrencyProvider({ children }: { children: React.ReactNode }) {
-  const [currency, setState] = useState<string>(() => readCookie('ff_currency') || 'USD');
+  const [currency, setState] = useState<string>('USD');
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    const saved = readCookie('ff_currency');
+    if (saved && saved !== currency) {
+      setState(saved);
+    }
+    setHydrated(true);
+  }, []);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-currency', currency);
   }, [currency]);
 
-  const setCurrency = (next: string) => {
+  const setCurrency = useCallback((next: string) => {
     document.cookie = `ff_currency=${next}${cookieAttributes()}`;
     setState(next);
     if (typeof location !== 'undefined' && location.pathname.startsWith('/dashboard')) {
@@ -36,9 +45,10 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ action: 'preferences', currency: next }),
       }).catch(() => undefined);
     }
-  };
+  }, []);
 
-  return <CurrencyContext.Provider value={{ currency, setCurrency }}>{children}</CurrencyContext.Provider>;
+  const value = hydrated ? currency : 'USD';
+  return <CurrencyContext.Provider value={{ currency: value, setCurrency }}>{children}</CurrencyContext.Provider>;
 }
 
 export const useCurrency = () => useContext(CurrencyContext);

@@ -306,7 +306,7 @@ export default function MaintenancePage() {
                       <div><small>MWO-{String(order.id).padStart(5, '0')}</small><h3>{t(order.title)}</h3></div>
                       <span><strong>{order.make} {order.model}</strong><small>{order.year} · {order.licensePlate}</small></span>
                     </header>
-                    {order.conflict && <div className="maintenance-card-conflict"><AlertTriangle /><span>{t(order.conflict.kind === 'active_rental' ? 'maintenanceActiveRental' : 'maintenanceBeforeRental')} #FF-{String(order.conflict.rentalId).padStart(4, '0')}</span></div>}
+                    {order.conflict && <div className="maintenance-card-conflict"><AlertTriangle /><span>{t(order.conflict.kind === 'active_rental' ? 'maintenanceActiveRental' : 'maintenanceBeforeRental')} <span dir="ltr">#FF-{String(order.conflict.rentalId).padStart(4, '0')}</span></span></div>}
                     <div className="maintenance-card-dates">
                       <div className={overdue ? 'overdue' : ''}><span>{t('maintenanceDue')}</span><strong>{dateTime(order.dueAt)}</strong><small><Gauge />{order.dueOdometer?.toLocaleString() || '—'} {t('miles')}</small>{overdue && <em>{t('maintenanceOverdue')}</em>}</div>
                       <div><span>{t('maintenanceWorkshop')}</span><strong>{dateTime(order.scheduledAt)}</strong><small><Timer />{order.durationHours}h {order.vendor ? `· ${order.vendor}` : ''}</small></div>
@@ -331,7 +331,7 @@ export default function MaintenancePage() {
                   return (
                     <tr key={order.id} className={order.conflict ? 'has-conflict' : ''}>
                       <td data-label={t('vehicle')}><div className="maintenance-vehicle"><img src={order.image} alt={`${order.make} ${order.model}`} loading="lazy" /><span><strong>{order.make} {order.model}</strong><small>{order.year} · {order.licensePlate}</small></span></div></td>
-                      <td data-label={t('maintenanceTask')}><div className="maintenance-task"><strong>{t(order.title)}</strong><small>MWO-{String(order.id).padStart(5, '0')} · {t(`maintenancePriority_${order.priority}`)}</small>{order.conflict && <em><AlertTriangle />{t(order.conflict.kind === 'active_rental' ? 'maintenanceActiveRental' : 'maintenanceBeforeRental')} #FF-{String(order.conflict.rentalId).padStart(4, '0')}</em>}</div></td>
+                      <td data-label={t('maintenanceTask')}><div className="maintenance-task"><strong>{t(order.title)}</strong><small>MWO-{String(order.id).padStart(5, '0')} · {t(`maintenancePriority_${order.priority}`)}</small>{order.conflict && <em><AlertTriangle />{t(order.conflict.kind === 'active_rental' ? 'maintenanceActiveRental' : 'maintenanceBeforeRental')} <span dir="ltr">#FF-{String(order.conflict.rentalId).padStart(4, '0')}</span></em>}</div></td>
                       <td data-label={t('maintenanceDue')}><div className={`maintenance-due ${overdue ? 'overdue' : ''}`}><strong>{dateTime(order.dueAt)}</strong><small><Gauge />{order.dueOdometer?.toLocaleString() || '—'} {t('miles')}</small>{overdue && <em>{t('maintenanceOverdue')}</em>}</div></td>
                       <td data-label={t('maintenanceWorkshop')}><div className="maintenance-workshop"><strong>{dateTime(order.scheduledAt)}</strong><small><Timer />{order.durationHours}h {order.vendor ? `· ${order.vendor}` : ''}</small></div></td>
                       <td data-label={t('status')}><span className={`maintenance-status maintenance-status-${order.status}`}>{t(`maintenanceStatus_${order.status}`)}</span></td>

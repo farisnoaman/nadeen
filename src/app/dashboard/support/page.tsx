@@ -379,7 +379,7 @@ export default function SupportPage() {
               {activeTicket.rentalId && (
                 <Link href="/dashboard/rentals" className="support-linked-rental">
                   <CalendarDays />
-                  <span><small>{t('supportLinkedRental')}</small><strong>#FF-{String(activeTicket.rentalId).padStart(4, '0')}</strong></span>
+                  <span><small>{t('supportLinkedRental')}</small><strong dir="ltr">#FF-{String(activeTicket.rentalId).padStart(4, '0')}</strong></span>
                   <ChevronRight />
                 </Link>
               )}

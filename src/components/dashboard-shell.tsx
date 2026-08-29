@@ -211,7 +211,7 @@ const { theme, setTheme } = useAppTheme();
 
   const logout = async () => {
     await api('/auth/logout', { method: 'POST' });
-    router.push('/login');
+    router.push('/');
     router.refresh();
   };
   const toggleSidebar = () => {
