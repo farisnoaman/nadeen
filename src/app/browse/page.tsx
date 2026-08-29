@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { ArrowRight, CarFront, Eye, Fuel, Gauge, Heart, MapPin, Search, SlidersHorizontal, Star, UserRound, X, Zap } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
-import { LanguageToggle, ThemeToggle } from '@/components/theme-controls';
+import { LanguageToggle, ThemeToggle, CurrencyToggle } from '@/components/theme-controls';
 import { Empty, Skeleton } from '@/components/ui';
 import { api } from '@/lib/client-api';
 import { money } from '@/lib/format';
@@ -131,7 +131,7 @@ export default function BrowsePage() {
   };
 
   return <div className="public-marketplace">
-    <header className="landing-nav"><Link href="/" className="logo"><span><CarFront/></span>FleetFlow</Link><nav><Link href="/browse">{t('marketplace')}</Link></nav><div className="nav-actions"><LanguageToggle/><ThemeToggle/>{account?<Link className="btn primary" href={account.role==='renter'?'/dashboard/browse':'/dashboard'}>{t('dashboard')}</Link>:<><Link className="btn ghost" href="/login">{t('signIn')}</Link><Link className="btn primary" href="/register?role=renter">{t('getStarted')}</Link></>}</div></header>
+    <header className="landing-nav"><Link href="/" className="logo"><span><CarFront/></span>FleetFlow</Link><nav><Link href="/browse">{t('marketplace')}</Link></nav><div className="nav-actions"><LanguageToggle/><ThemeToggle/><CurrencyToggle/>{account?<Link className="btn primary" href={account.role==='renter'?'/dashboard/browse':'/dashboard'}>{t('dashboard')}</Link>:<><Link className="btn ghost" href="/login">{t('signIn')}</Link><Link className="btn primary" href="/register?role=renter">{t('getStarted')}</Link></>}</div></header>
     <main className="public-marketplace-content">
     <section className="browse-hero"><div><span className="eyebrow">{vehicles.length} {t('liveVehicles')}</span><h2>{t('findDrive')}</h2><p>{t('findDriveText')}</p></div><div className="browse-location"><MapPin/><label><small>{t('pickupCity')}</small><CitySearch cities={pickupCities} value={filters.city} onChange={value=>setFilter('city',value)} allLabel={t('allPickupCities')} placeholder={t('searchCars')} /></label><button type="button" aria-label={t('searchCars')}><Search/></button></div></section>
     <div className="category-scroll">{categories.map(item => <button className={category === item ? 'active' : ''} onClick={() => setCategory(item)} key={item}>{t(item)}</button>)}</div>
