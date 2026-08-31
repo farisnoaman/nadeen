@@ -16,7 +16,7 @@ import {
   X,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { KeyboardEvent, useEffect, useRef, useState } from 'react';
+import { KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/client-api';
 import { money } from '@/lib/format';
 import { useI18n } from '@/lib/i18n';
@@ -138,6 +138,33 @@ export function GlobalSearch() {
     router.push(result.href);
   };
 
+  const containerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (event: PointerEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setOpen(false);
+        inputRef.current?.blur();
+      }
+    };
+    document.addEventListener('pointerdown', onPointerDown, { passive: true });
+    return () => document.removeEventListener('pointerdown', onPointerDown);
+  }, [open]);
+
+  const swipeRef = useRef({ startX: 0, tracking: false });
+  const onTouchStart = useCallback((event: React.TouchEvent) => {
+    swipeRef.current = { startX: event.touches[0].clientX, tracking: true };
+  }, []);
+  const onTouchEnd = useCallback((event: React.TouchEvent) => {
+    if (!swipeRef.current.tracking) return;
+    swipeRef.current.tracking = false;
+    const dx = event.changedTouches[0].clientX - swipeRef.current.startX;
+    if (Math.abs(dx) > 60) {
+      setOpen(false);
+      inputRef.current?.blur();
+    }
+  }, []);
+
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'ArrowDown') {
       event.preventDefault();
@@ -170,8 +197,7 @@ export function GlobalSearch() {
   };
 
   return (
-    <div className={`global-search ${open ? 'open' : ''}`}>
-      {open && <button type="button" className="global-search-scrim" onClick={() => setOpen(false)} aria-label={t('close')} />}
+    <div ref={containerRef} className={`global-search ${open ? 'open' : ''}`} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
       <label className="global-search-input" htmlFor="fleetflow-global-search" onClick={() => { if (!open) { setOpen(true); requestAnimationFrame(() => inputRef.current?.focus()); } }}>
         <Search />
         <input
