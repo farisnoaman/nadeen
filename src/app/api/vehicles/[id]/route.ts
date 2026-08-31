@@ -21,7 +21,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
     const user = await getSession();
     const { id } = await params;
     const db = await getDb();
-    const [selected] = await db.select({ vehicle: vehicles, companyName: companies.name, companyCurrency: { baseCurrency: companies.baseCurrency, supportedCurrencies: companies.supportedCurrencies, exchangeRates: companies.exchangeRates }, companyVerificationStatus:companies.verificationStatus, companySubscriptionStatus:companies.subscriptionStatus, companyOperationalStatus:companies.operationalStatus }).from(vehicles)
+    const [selected] = await db.select({ vehicle: vehicles, companyName: companies.name, companyCurrency: { baseCurrency: companies.baseCurrency, supportedCurrencies: companies.supportedCurrencies, exchangeRates: companies.exchangeRates }, companyVerificationStatus:companies.verificationStatus, companySubscriptionStatus:companies.subscriptionStatus, companyOperationalStatus:companies.operationalStatus, whatsappNumbers:companies.whatsappNumbers }).from(vehicles)
       .innerJoin(companies, eq(vehicles.companyId, companies.id))
       .where(eq(vehicles.id, Number(id))).limit(1);
     if (!selected
@@ -41,6 +41,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
       ...selected.vehicle,
       companyName: selected.companyName,
       companyCurrency: selected.companyCurrency,
+      whatsappNumbers: selected.whatsappNumbers || [],
       pickupLocations: normalizePickupLocations(selected.vehicle.pickupLocations, selected.vehicle.location),
       protectionPackages: packageRows.length
         ? (applicablePackages.length ? applicablePackages : normalizeProtectionPackages([], selected.vehicle.insuranceDeductible).slice(0, 1))

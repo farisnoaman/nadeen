@@ -40,6 +40,7 @@ export const companies = pgTable('companies', {
   baseCurrency: text('base_currency').notNull().default('USD'),
   supportedCurrencies: jsonb('supported_currencies').$type<string[]>().notNull().default(['USD']),
   exchangeRates: jsonb('exchange_rates').$type<Record<string, number>>().notNull().default({}),
+  whatsappNumbers: jsonb('whatsapp_numbers').$type<Array<{ label: string; phone: string }>>().notNull().default([]),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 

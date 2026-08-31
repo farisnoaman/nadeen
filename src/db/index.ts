@@ -41,6 +41,7 @@ ALTER TABLE companies ALTER COLUMN operational_status SET DEFAULT 'paused';
 ALTER TABLE companies ADD COLUMN IF NOT EXISTS base_currency TEXT NOT NULL DEFAULT 'USD';
 ALTER TABLE companies ADD COLUMN IF NOT EXISTS supported_currencies JSONB NOT NULL DEFAULT '["USD"]'::jsonb;
 ALTER TABLE companies ADD COLUMN IF NOT EXISTS exchange_rates JSONB NOT NULL DEFAULT '{}'::jsonb;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS whatsapp_numbers JSONB NOT NULL DEFAULT '[]'::jsonb;
 UPDATE companies SET verified_at=COALESCE(verified_at,created_at) WHERE verification_status='verified' AND verified_at IS NULL;
 ALTER TABLE companies ALTER COLUMN verification_status SET DEFAULT 'unsubmitted';
 UPDATE companies SET subscription_plan_id=(SELECT id FROM subscription_plans WHERE code='GROWTH'),

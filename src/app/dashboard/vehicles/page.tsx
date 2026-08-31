@@ -3,7 +3,7 @@ import Link from 'next/link';
 import {
   CarFront, Check, Fuel, Gauge, History, ImagePlus, Info, MapPin,
   Pencil, Plus, Save, Search, ShieldCheck, SlidersHorizontal, Sparkles, Star,
-  Trash2, UserRound, Wand2, Wrench, X,
+  Trash2, UserRound, Wand2, Wrench, X, Camera, Tag, MapPinned, Shield,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '@/lib/client-api';
@@ -317,39 +317,41 @@ function VehicleForm({ open, vehicle, onClose, onSaved }: { open: boolean; vehic
           </div>
         )}
 
-        <section>
-          <div className="form-section-title"><span>01</span><div><h3>{t('vehicleDetails')}</h3><p>{t('basicInformation')}</p></div></div>
-          <div className="form-grid">
+        <section className="form-section">
+          <div className="form-section-header">
+            <div className="form-section-icon"><CarFront /></div>
+            <div><h3>{t('vehicleDetails')}</h3><p>{t('basicInformation')}</p></div>
+          </div>
+          <div className="form-grid form-grid-3">
             {([['make', 'make'], ['model', 'model'], ['trim', 'trim'], ['year', 'year'], ['licensePlate', 'licensePlate'], ['vin', 'vin'], ['color', 'color'], ['odometer', 'odometer'], ['fuelLevel', 'fuelLevel']] as const).map(([key, label]) => (
-              <label key={key}>{t(label)}<input type={['year', 'odometer', 'fuelLevel'].includes(key) ? 'number' : 'text'} value={form[key]} onChange={(e) => set(key, ['year', 'odometer', 'fuelLevel'].includes(key) ? Number(e.target.value) : e.target.value)} required /></label>
+              <label key={key} className="form-label">{t(label)}<input type={['year', 'odometer', 'fuelLevel'].includes(key) ? 'number' : 'text'} value={form[key]} onChange={(e) => set(key, ['year', 'odometer', 'fuelLevel'].includes(key) ? Number(e.target.value) : e.target.value)} required /></label>
             ))}
-            <div className="span-2 category-grid">
-              <label>{t('category')}<select value={form.category} onChange={(e) => set('category', e.target.value)}>{['Luxury sedan', 'Executive', 'Premium SUV', 'Electric SUV', 'Sedan', 'Performance', 'SUV', 'Luxury SUV', 'Electric sedan'].map((value) => <option key={value} value={value}>{t(value)}</option>)}</select></label>
-              <label>{t('bodyType')}<select value={form.bodyType} onChange={(e) => set('bodyType', e.target.value)}>{['Sedan', 'Hatchback', 'Coupe', 'Convertible', 'SUV', 'Pickup', 'Van'].map((value) => <option key={value} value={value}>{t(value)}</option>)}</select></label>
+            <div className="span-2 form-grid-2">
+              <label className="form-label">{t('category')}<select value={form.category} onChange={(e) => set('category', e.target.value)}>{['Luxury sedan', 'Executive', 'Premium SUV', 'Electric SUV', 'Sedan', 'Performance', 'SUV', 'Luxury SUV', 'Electric sedan'].map((value) => <option key={value} value={value}>{t(value)}</option>)}</select></label>
+              <label className="form-label">{t('bodyType')}<select value={form.bodyType} onChange={(e) => set('bodyType', e.target.value)}>{['Sedan', 'Hatchback', 'Coupe', 'Convertible', 'SUV', 'Pickup', 'Van'].map((value) => <option key={value} value={value}>{t(value)}</option>)}</select></label>
             </div>
           </div>
         </section>
 
-        <section>
-          <div className="form-section-title"><span>02</span><div><h3>{t('pricing')}</h3><p>{t('pricingText')}</p></div></div>
-          <div className="form-grid">
-            <label>{t('hour')}<input type="number" min="0" value={form.hourlyRate} onChange={(e) => set('hourlyRate', Number(e.target.value))} /></label>
-            <label>{t('day')}<input type="number" min="0" value={form.dailyRate} onChange={(e) => set('dailyRate', Number(e.target.value))} required /></label>
-            <label>{t('week')}<input type="number" min="0" value={form.weeklyRate} onChange={(e) => set('weeklyRate', Number(e.target.value))} /></label>
-            <label>{t('month')}<input type="number" min="0" value={form.monthlyRate} onChange={(e) => set('monthlyRate', Number(e.target.value))} /></label>
+        <section className="form-section">
+          <div className="form-section-header">
+            <div className="form-section-icon"><Tag /></div>
+            <div><h3>{t('pricing')}</h3><p>{t('pricingText')}</p></div>
+          </div>
+          <div className="form-grid form-grid-4">
+            <label className="form-label form-label-highlight">{t('hour')}<input type="number" min="0" value={form.hourlyRate} onChange={(e) => set('hourlyRate', Number(e.target.value))} /></label>
+            <label className="form-label form-label-highlight">{t('day')}<input type="number" min="0" value={form.dailyRate} onChange={(e) => set('dailyRate', Number(e.target.value))} required /></label>
+            <label className="form-label form-label-highlight">{t('week')}<input type="number" min="0" value={form.weeklyRate} onChange={(e) => set('weeklyRate', Number(e.target.value))} /></label>
+            <label className="form-label form-label-highlight">{t('month')}<input type="number" min="0" value={form.monthlyRate} onChange={(e) => set('monthlyRate', Number(e.target.value))} /></label>
           </div>
         </section>
 
-        <section>
-          <div className="form-section-title"><span>03</span><div><h3>{t('vehicleDetails')}</h3><p>{t('choosePhoto')}</p></div></div>
+        <section className="form-section">
+          <div className="form-section-header">
+            <div className="form-section-icon"><Camera /></div>
+            <div><h3>{t('vehicleDetails')}</h3><p>{t('choosePhoto')}</p></div>
+          </div>
           <div className="vehicle-photo-section">
-            <header>
-              <div>
-                <span className="eyebrow"><ImagePlus />{t('photoSectionTitle')}</span>
-                <h4>{t('photoSectionTitle')}</h4>
-                <p>{t('photoSectionText')}</p>
-              </div>
-            </header>
             <div className="vehicle-photo-urls">
               {photoUrls.map((url, index) => (
                 <div className="vehicle-photo-url" key={index}>
@@ -393,8 +395,11 @@ function VehicleForm({ open, vehicle, onClose, onSaved }: { open: boolean; vehic
           </div>
         </section>
 
-        <section>
-          <div className="form-section-title"><span>04</span><div><h3>{t('featuresLabel')}</h3><p>{t('featuresSectionText')}</p></div></div>
+        <section className="form-section">
+          <div className="form-section-header">
+            <div className="form-section-icon"><Sparkles /></div>
+            <div><h3>{t('featuresLabel')}</h3><p>{t('featuresSectionText')}</p></div>
+          </div>
           <div className="vehicle-features-categories">
             {FEATURE_CATEGORIES.map((category) => (
               <div className="vehicle-features-category" key={category.key}>
@@ -416,52 +421,66 @@ function VehicleForm({ open, vehicle, onClose, onSaved }: { open: boolean; vehic
           </div>
         </section>
 
-        <section>
-          <div className="form-section-title"><span>05</span><div><h3>{t('pickupLocations')}</h3><p>{t('pickupLocationsHint')}</p></div></div>
+        <section className="form-section">
+          <div className="form-section-header">
+            <div className="form-section-icon"><MapPinned /></div>
+            <div><h3>{t('pickupLocations')}</h3><p>{t('pickupLocationsHint')}</p></div>
+          </div>
           <div className="pickup-location-editor">
-            <div>
+            <div className="pickup-location-list">
               {(form.pickupLocations || []).map((location: any, index: number) => (
-                <div className="pickup-location-row" key={index}>
-                  <label>{t('pickupCity')}<input value={location.city} onChange={(e) => setPickup(index, 'city', e.target.value)} placeholder="San Francisco" required /></label>
-                  <label>{t('pickupSite')}<input value={location.site} onChange={(e) => setPickup(index, 'site', e.target.value)} placeholder="SoMa Mobility Hub" required /></label>
-                  <button type="button" onClick={() => removePickup(index)} disabled={(form.pickupLocations || []).length <= 1} aria-label={t('removePickupLocation')}><Trash2 /></button>
+                <div className="pickup-location-card" key={index}>
+                  <div className="pickup-location-card-header">
+                    <span className="pickup-location-index">{index + 1}</span>
+                    <span className="pickup-location-label">{t('pickupLocation')} #{index + 1}</span>
+                    <button type="button" className="pickup-location-remove" onClick={() => removePickup(index)} disabled={(form.pickupLocations || []).length <= 1} aria-label={t('removePickupLocation')}><Trash2 /></button>
+                  </div>
+                  <div className="pickup-location-fields">
+                    <label className="form-label">{t('pickupCity')}<input value={location.city} onChange={(e) => setPickup(index, 'city', e.target.value)} placeholder="San Francisco" required /></label>
+                    <label className="form-label">{t('pickupSite')}<input value={location.site} onChange={(e) => setPickup(index, 'site', e.target.value)} placeholder="SoMa Mobility Hub" required /></label>
+                  </div>
                 </div>
               ))}
             </div>
-            <button type="button" className="btn secondary small" onClick={addPickup}><Plus />{t('addPickupLocation')}</button>
+            <button type="button" className="btn secondary small pickup-location-add" onClick={addPickup}><Plus />{t('addPickupLocation')}</button>
           </div>
         </section>
 
-        <section>
-          <div className="form-section-title"><span>06</span><div><h3>{t('insuranceAndOperations')}</h3><p>{t('ksaVehicleCompliance')}</p></div></div>
-          <div className="form-grid">
-            <label>{t('insuranceCoverage')}<select value={form.insuranceCoverage} onChange={(e) => set('insuranceCoverage', e.target.value)}><option value="third_party">{t('third_party')}</option><option value="comprehensive">{t('comprehensive')}</option></select></label>
-            <label>{t('insuranceProvider')}<input value={form.insuranceProvider} onChange={(e) => set('insuranceProvider', e.target.value)} /></label>
-            <label>{t('insurancePolicyNumber')}<input value={form.insurancePolicyNumber} onChange={(e) => set('insurancePolicyNumber', e.target.value)} /></label>
-            <label>{t('insurancePolicyExpiry')}<input type="date" value={form.insurancePolicyExpiry} onChange={(e) => set('insurancePolicyExpiry', e.target.value)} /></label>
-            <label>{t('vehiclePolicyDeductible')}<input type="number" min="0" value={form.insuranceDeductible} onChange={(e) => set('insuranceDeductible', Number(e.target.value))} /></label>
-            <label>{t('fuel')}<select value={form.fuel} onChange={(e) => set('fuel', e.target.value)}>{['Hybrid', 'Petrol', 'Diesel', 'Electric'].map((value) => <option key={value} value={value}>{t(value)}</option>)}</select></label>
-            <label>{t('gearbox')}<select value={form.gearbox} onChange={(e) => set('gearbox', e.target.value)}>{['Automatic', 'Manual'].map((value) => <option key={value} value={value}>{t(value)}</option>)}</select></label>
-            <label>{t('drivetrain')}<select value={form.drivetrain} onChange={(e) => set('drivetrain', e.target.value)}>{['FWD', 'RWD', 'AWD', '4WD'].map((value) => <option key={value} value={value}>{t(value)}</option>)}</select></label>
-            <label>{t('steeringType')}<select value={form.steeringType} onChange={(e) => set('steeringType', e.target.value)}>{['Left-hand drive', 'Right-hand drive'].map((value) => <option key={value} value={value}>{t(value)}</option>)}</select></label>
-            <label>{t('seats')}<input type="number" min="1" max="16" value={form.seats} onChange={(e) => set('seats', Number(e.target.value))} required /></label>
-            <label>{t('fuelPolicy')}<select value={form.fuelPolicy} onChange={(e) => set('fuelPolicy', e.target.value)}>{[{ value: 'same_to_same', label: 'same_to_same' }, { value: 'full_to_full', label: 'full_to_full' }, { value: 'prepaid', label: 'prepaid' }].map((item) => <option key={item.value} value={item.value}>{t(item.label)}</option>)}</select></label>
-            <label>{t('dailyKilometerAllowance')}<input type="number" min="0" value={form.dailyKilometerAllowance} onChange={(e) => set('dailyKilometerAllowance', Number(e.target.value))} /></label>
-            <label>{t('excessKilometerRate')}<input type="number" min="0" step="0.01" value={form.excessKilometerRate} onChange={(e) => set('excessKilometerRate', Number(e.target.value))} /></label>
+        <section className="form-section">
+          <div className="form-section-header">
+            <div className="form-section-icon"><Shield /></div>
+            <div><h3>{t('insuranceAndOperations')}</h3><p>{t('ksaVehicleCompliance')}</p></div>
+          </div>
+          <div className="form-grid form-grid-3">
+            <label className="form-label">{t('insuranceCoverage')}<select value={form.insuranceCoverage} onChange={(e) => set('insuranceCoverage', e.target.value)}><option value="third_party">{t('third_party')}</option><option value="comprehensive">{t('comprehensive')}</option></select></label>
+            <label className="form-label">{t('insuranceProvider')}<input value={form.insuranceProvider} onChange={(e) => set('insuranceProvider', e.target.value)} /></label>
+            <label className="form-label">{t('insurancePolicyNumber')}<input value={form.insurancePolicyNumber} onChange={(e) => set('insurancePolicyNumber', e.target.value)} /></label>
+            <label className="form-label">{t('insurancePolicyExpiry')}<input type="date" value={form.insurancePolicyExpiry} onChange={(e) => set('insurancePolicyExpiry', e.target.value)} /></label>
+            <label className="form-label">{t('vehiclePolicyDeductible')}<input type="number" min="0" value={form.insuranceDeductible} onChange={(e) => set('insuranceDeductible', Number(e.target.value))} /></label>
+            <label className="form-label">{t('fuel')}<select value={form.fuel} onChange={(e) => set('fuel', e.target.value)}>{['Hybrid', 'Petrol', 'Diesel', 'Electric'].map((value) => <option key={value} value={value}>{t(value)}</option>)}</select></label>
+            <label className="form-label">{t('gearbox')}<select value={form.gearbox} onChange={(e) => set('gearbox', e.target.value)}>{['Automatic', 'Manual'].map((value) => <option key={value} value={value}>{t(value)}</option>)}</select></label>
+            <label className="form-label">{t('drivetrain')}<select value={form.drivetrain} onChange={(e) => set('drivetrain', e.target.value)}>{['FWD', 'RWD', 'AWD', '4WD'].map((value) => <option key={value} value={value}>{t(value)}</option>)}</select></label>
+            <label className="form-label">{t('steeringType')}<select value={form.steeringType} onChange={(e) => set('steeringType', e.target.value)}>{['Left-hand drive', 'Right-hand drive'].map((value) => <option key={value} value={value}>{t(value)}</option>)}</select></label>
+            <label className="form-label">{t('seats')}<input type="number" min="1" max="16" value={form.seats} onChange={(e) => set('seats', Number(e.target.value))} required /></label>
+            <label className="form-label">{t('fuelPolicy')}<select value={form.fuelPolicy} onChange={(e) => set('fuelPolicy', e.target.value)}>{[{ value: 'same_to_same', label: 'same_to_same' }, { value: 'full_to_full', label: 'full_to_full' }, { value: 'prepaid', label: 'prepaid' }].map((item) => <option key={item.value} value={item.value}>{t(item.label)}</option>)}</select></label>
+            <label className="form-label">{t('dailyKilometerAllowance')}<input type="number" min="0" value={form.dailyKilometerAllowance} onChange={(e) => set('dailyKilometerAllowance', Number(e.target.value))} /></label>
+            <label className="form-label">{t('excessKilometerRate')}<input type="number" min="0" step="0.01" value={form.excessKilometerRate} onChange={(e) => set('excessKilometerRate', Number(e.target.value))} /></label>
           </div>
         </section>
 
         <footer className="vehicle-form-footer">
-          <button type="button" className="btn secondary" onClick={onClose}>{t('cancel')}</button>
-          {!isEdit && (
-            <button
-              type="button"
-              className="btn ghost"
-              onClick={() => { writeDraft({ form, photoUrls, savedAt: Date.now() }); setLastSavedAt(new Date()); toast(t('draftAutoSaved')); }}
-            >
-              <Save />{t('saveAsDraft')}
-            </button>
-          )}
+          <div className="vehicle-form-footer-left">
+            <button type="button" className="btn secondary" onClick={onClose}>{t('cancel')}</button>
+            {!isEdit && (
+              <button
+                type="button"
+                className="btn ghost"
+                onClick={() => { writeDraft({ form, photoUrls, savedAt: Date.now() }); setLastSavedAt(new Date()); toast(t('draftAutoSaved')); }}
+              >
+                <Save />{t('saveAsDraft')}
+              </button>
+            )}
+          </div>
           <button type="submit" className="btn primary" disabled={saving}>{saving ? t('saving') : t(isEdit ? 'save' : 'create')}</button>
         </footer>
       </form>

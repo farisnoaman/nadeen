@@ -23,9 +23,9 @@ export async function seedDatabase(db: any) {
     subscriptionStatus:'active' as const, subscriptionStartedAt:new Date(), operationalStatus:'active' as const,
   };
   const [city, lux, eco] = await db.insert(companies).values([
-    { name: 'CityDrive Rentals', slug: 'citydrive', logo: 'CD', city: 'San Francisco', ...verifiedCompany },
-    { name: 'LuxWheels Premium', slug: 'luxwheels', logo: 'LW', city: 'Los Angeles', ...verifiedCompany },
-    { name: 'EcoMotion EV', slug: 'ecomotion', logo: 'EM', city: 'San Francisco', ...verifiedCompany },
+    { name: 'CityDrive Rentals', slug: 'citydrive', logo: 'CD', city: 'San Francisco', ...verifiedCompany, whatsappNumbers: [] },
+    { name: 'LuxWheels Premium', slug: 'luxwheels', logo: 'LW', city: 'Los Angeles', ...verifiedCompany, whatsappNumbers: [] },
+    { name: 'EcoMotion EV', slug: 'ecomotion', logo: 'EM', city: 'San Francisco', ...verifiedCompany, whatsappNumbers: [] },
   ]).returning();
 
   const seededUsers = await db.insert(users).values([

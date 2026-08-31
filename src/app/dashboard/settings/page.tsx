@@ -18,11 +18,13 @@ import {
   Moon,
   Palette,
   Phone,
+  Plus,
   Save,
   ShieldCheck,
   Sparkles,
   Sun,
   UserRound,
+  X,
 } from 'lucide-react';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Skeleton, useToast } from '@/components/ui';
@@ -103,9 +105,11 @@ export default function SettingsPage() {
   const [passwords, setPasswords] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [currency, setCurrency] = useState<CurrencySettings | null>(null);
   const [savingCurrency, setSavingCurrency] = useState(false);
+  type WhatsAppEntry = { label: string; phone: string };
+  const [whatsappNumbers, setWhatsappNumbers] = useState<WhatsAppEntry[]>([]);
 
   useEffect(() => {
-    api<{ profile: Profile; preferences: Preferences; loyalty:LoyaltySettings|null; currency:CurrencySettings[]|null }>('/settings')
+    api<{ profile: Profile; preferences: Preferences; loyalty:LoyaltySettings|null; currency:CurrencySettings[]|null; whatsappNumbers?: WhatsAppEntry[] }>('/settings')
       .then(data => {
         setProfile(data.profile);
         setLoyalty(data.loyalty);
@@ -119,6 +123,7 @@ export default function SettingsPage() {
         setCurrency(Array.isArray(data.currency) && data.currency[0]
           ? data.currency[0]
           : { baseCurrency: 'USD', supportedCurrencies: ['USD'], exchangeRates: {} });
+        setWhatsappNumbers(data.whatsappNumbers || []);
       })
       .catch(error => toast(error.message, true))
       .finally(() => setLoading(false));
@@ -141,7 +146,11 @@ export default function SettingsPage() {
     try {
       const data = await api<{ profile: Profile; sessionToken: string }>('/settings', {
         method: 'PATCH',
-        body: JSON.stringify({ action: 'profile', ...profileForm }),
+        body: JSON.stringify({
+          action: 'profile',
+          ...profileForm,
+          whatsappNumbers: whatsappNumbers.filter(n => n.label && n.phone),
+        }),
       });
       saveSessionToken(data.sessionToken);
       setProfile(data.profile);
@@ -369,6 +378,53 @@ export default function SettingsPage() {
                 </label>
               </div>
               <div className="settings-workspace-note"><ShieldCheck /><span><strong>{t('settingsAdminOnly')}</strong><small>{t('settingsAdminOnlyText')}</small></span></div>
+              <div className="whatsapp-numbers-section">
+                <label><span>{t('whatsappNumbers')}</span></label>
+                <p className="field-hint">{t('whatsappNumbersHint')}</p>
+                {whatsappNumbers.map((entry, index) => (
+                  <div key={index} className="whatsapp-number-row">
+                    <input
+                      type="text"
+                      placeholder={t('whatsappLabel')}
+                      value={entry.label}
+                      onChange={e => {
+                        const next = [...whatsappNumbers];
+                        next[index] = { ...next[index], label: e.target.value };
+                        setWhatsappNumbers(next);
+                      }}
+                      className="whatsapp-label-input"
+                    />
+                    <input
+                      type="tel"
+                      placeholder="+966501234567"
+                      value={entry.phone}
+                      onChange={e => {
+                        const next = [...whatsappNumbers];
+                        next[index] = { ...next[index], phone: e.target.value };
+                        setWhatsappNumbers(next);
+                      }}
+                      className="whatsapp-phone-input"
+                    />
+                    <button
+                      type="button"
+                      className="whatsapp-remove-btn"
+                      onClick={() => setWhatsappNumbers(whatsappNumbers.filter((_, i) => i !== index))}
+                      aria-label={t('remove')}
+                    >
+                      <X />
+                    </button>
+                  </div>
+                ))}
+                {whatsappNumbers.length < 10 && (
+                  <button
+                    type="button"
+                    className="btn secondary whatsapp-add-btn"
+                    onClick={() => setWhatsappNumbers([...whatsappNumbers, { label: '', phone: '' }])}
+                  >
+                    <Plus /> {t('addWhatsAppNumber')}
+                  </button>
+                )}
+              </div>
               <SettingsActions saving={savingProfile} label={t('settingsSaveWorkspace')} t={t} />
             </form>
             {currency && <CurrencyRatesSection currency={currency} setCurrency={setCurrency} saving={savingCurrency} onSave={saveCurrency} t={t} />}

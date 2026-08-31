@@ -39,6 +39,7 @@ import { useAppTheme } from '@/lib/theme';
 import { GlobalSearch } from './global-search';
 import { Avatar, Skeleton } from './ui';
 import { CurrencyToggle, LanguageToggle, ThemeToggle } from './theme-controls';
+import { useWhatsApp } from './whatsapp-float';
 
 type User = {
   id: number;
@@ -71,6 +72,7 @@ const { theme, setTheme } = useAppTheme();
   const path = usePathname();
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
+  const [whatsappNumbers, setWhatsappNumbers] = useState<Array<{label:string; phone:string}>>([]);
   const [loading, setLoading] = useState(true);
   const [mobile, setMobile] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -128,14 +130,23 @@ const { theme, setTheme } = useAppTheme();
 
   useEffect(() => {
     if (!user) return;
-    api<{ preferences: { language: 'en' | 'ar'; theme: 'light' | 'dark'; currency?: string } }>('/settings')
+    api<{ preferences: { language: 'en' | 'ar'; theme: 'light' | 'dark'; currency?: string }; whatsappNumbers?: Array<{label:string; phone:string}> }>('/settings')
       .then(data => {
         if (data.preferences.language !== lang) setLang(data.preferences.language);
         if (data.preferences.theme !== theme) setTheme(data.preferences.theme);
         if (data.preferences.currency && data.preferences.currency !== currency) setCurrency(data.preferences.currency);
+        if (data.whatsappNumbers) setWhatsappNumbers(data.whatsappNumbers);
       })
       .catch(() => undefined);
   }, [user?.id]);
+
+  const { setWhatsApp } = useWhatsApp();
+  useEffect(() => {
+    if (whatsappNumbers.length) {
+      setWhatsApp(whatsappNumbers, user?.companyName);
+      return () => setWhatsApp([]);
+    }
+  }, [whatsappNumbers, user?.companyName, setWhatsApp]);
 
   useEffect(() => {
     if (!user) return;

@@ -464,6 +464,31 @@ html[lang="en"]{--ff-type-caption:clamp(10px,calc(9px + .12vw),11.5px);--ff-type
 .vehicle-form .form-section-title h3{font-size:var(--ff-type-card-title)}
 .vehicle-form .form-section-title p{font-size:var(--ff-type-small);color:var(--muted);margin-top:4px;max-width:60ch}
 .vehicle-form .category-grid{grid-template-columns:1fr 1fr;gap:14px}
+.form-section{display:flex;flex-direction:column;gap:16px;padding:20px;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+.form-section-header{display:flex;align-items:flex-start;gap:14px;margin-bottom:4px}
+.form-section-icon{width:40px;height:40px;border-radius:10px;background:var(--green-soft);color:var(--green);display:grid;place-items:center;flex:0 0 auto}
+.form-section-icon svg{width:20px;height:20px}
+.form-section-header h3{font-size:var(--ff-type-card-title);letter-spacing:-.02em;margin:0}
+.form-section-header p{font-size:var(--ff-type-small);color:var(--muted);margin-top:2px;max-width:60ch}
+.form-grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.form-grid-4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.form-grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.form-label{display:flex;flex-direction:column;gap:6px;font-size:var(--ff-type-small);font-weight:700;color:var(--text)}
+.form-label input,.form-label select{height:42px;border:1px solid var(--line);border-radius:10px;padding:0 14px;font-size:var(--ff-type-control);background:var(--surface-2);transition:border-color .15s,box-shadow .15s}
+.form-label input:focus,.form-label select:focus{outline:0;border-color:var(--green);box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 15%,transparent)}
+.form-label-highlight input{font-weight:700;color:var(--green)}
+.pickup-location-list{display:flex;flex-direction:column;gap:12px}
+.pickup-location-card{border:1px solid var(--line);border-radius:12px;background:var(--surface-2);overflow:hidden;transition:border-color .15s}
+.pickup-location-card:hover{border-color:color-mix(in srgb,var(--green) 30%,var(--line))}
+.pickup-location-card-header{display:flex;align-items:center;gap:10px;padding:10px 14px;background:color-mix(in srgb,var(--green) 5%,var(--surface-2));border-bottom:1px solid var(--line)}
+.pickup-location-index{width:28px;height:28px;border-radius:8px;background:var(--green);color:#fff;display:grid;place-items:center;font-size:var(--ff-type-caption);font-weight:800}
+.pickup-location-label{flex:1;font-size:var(--ff-type-small);font-weight:700;color:var(--text)}
+.pickup-location-remove{width:32px;height:32px;border-radius:8px;background:transparent;color:var(--muted);display:grid;place-items:center;transition:background .15s,color .15s;border:1px solid transparent}
+.pickup-location-remove:hover:not(:disabled){background:color-mix(in srgb,var(--danger) 12%,transparent);color:var(--danger);border-color:color-mix(in srgb,var(--danger) 25%,transparent)}
+.pickup-location-remove:disabled{opacity:.3;cursor:not-allowed}
+.pickup-location-remove svg{width:15px}
+.pickup-location-fields{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:14px}
+.pickup-location-add{margin-top:4px}
 .vehicle-draft-status{display:flex;align-items:center;gap:8px;padding:9px 14px;border:1px solid color-mix(in srgb,var(--green) 25%,var(--line));border-radius:10px;background:var(--green-soft);color:var(--green);font-size:var(--ff-type-small);font-weight:750}
 .vehicle-draft-status svg{width:15px}
 .vehicle-draft-banner{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:18px 24px 0;padding:14px 18px;border:1px solid color-mix(in srgb,var(--amber) 30%,var(--line));border-radius:12px;background:color-mix(in srgb,var(--amber) 10%,var(--surface))}
@@ -509,10 +534,11 @@ html[lang="en"]{--ff-type-caption:clamp(10px,calc(9px + .12vw),11.5px);--ff-type
 .vehicle-features-checkboxes label>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .vehicle-features-checkboxes label>svg{width:14px;height:14px;color:var(--green);flex:0 0 auto;display:none}
 .vehicle-features-checkboxes label.selected>svg{display:block}
-.vehicle-form-footer{position:sticky;bottom:0;display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:14px 0 0;margin-top:6px;border-top:1px solid var(--line);background:var(--surface);z-index:2}
+.vehicle-form-footer{position:sticky;bottom:0;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 0 0;margin-top:6px;border-top:1px solid var(--line);background:var(--surface);z-index:2}
+.vehicle-form-footer-left{display:flex;align-items:center;gap:10px}
 .vehicle-form-footer .btn svg{width:15px}
-@media(max-width:750px){.vehicle-features-checkboxes{grid-template-columns:1fr 1fr}.vehicle-photo-grid{grid-template-columns:repeat(2,1fr)}.vehicle-form .category-grid{grid-template-columns:1fr}.vehicle-draft-banner{flex-direction:column;align-items:flex-start;gap:12px}.vehicle-draft-banner>div:last-child{width:100%}.vehicle-draft-banner>div:last-child .btn{flex:1}}
-@media(max-width:480px){.vehicle-features-checkboxes{grid-template-columns:1fr}.vehicle-photo-url{grid-template-columns:28px 1fr;row-gap:6px}.vehicle-photo-url input{grid-column:1/-1}.vehicle-photo-set-cover,.vehicle-photo-remove{grid-row:2}}
+@media(max-width:750px){.vehicle-features-checkboxes{grid-template-columns:1fr 1fr}.vehicle-photo-grid{grid-template-columns:repeat(2,1fr)}.vehicle-form .category-grid{grid-template-columns:1fr}.vehicle-draft-banner{flex-direction:column;align-items:flex-start;gap:12px}.vehicle-draft-banner>div:last-child{width:100%}.vehicle-draft-banner>div:last-child .btn{flex:1}.form-grid-3,.form-grid-4{grid-template-columns:1fr 1fr}.pickup-location-fields{grid-template-columns:1fr}}
+@media(max-width:480px){.vehicle-features-checkboxes{grid-template-columns:1fr}.vehicle-photo-url{grid-template-columns:28px 1fr;row-gap:6px}.vehicle-photo-url input{grid-column:1/-1}.vehicle-photo-set-cover,.vehicle-photo-remove{grid-row:2}.form-grid-3,.form-grid-4,.form-grid-2{grid-template-columns:1fr}.vehicle-form-footer{flex-direction:column-reverse;gap:10px}.vehicle-form-footer-left{width:100%}.vehicle-form-footer-left .btn{flex:1}}
 
 /* Currency & exchange-rate settings */
 .currency-base,.currency-supported,.currency-rates{margin:18px 20px 0;padding:15px;border:1px solid var(--line);border-radius:11px;background:var(--surface)}
@@ -616,6 +642,38 @@ html[lang="en"]{--ff-type-caption:clamp(10px,calc(9px + .12vw),11.5px);--ff-type
   .rental-view-card>footer .pipeline-actions .action-cancel{flex:0 0 auto}
   .rental-view-card>footer .pipeline-actions a,.rental-view-card>footer .pipeline-actions button{min-height:38px}
 }
+
+.whatsapp-float-wrapper{position:fixed;bottom:28px;right:28px;z-index:9999}
+[dir="rtl"] .whatsapp-float-wrapper{right:auto;left:28px}
+.whatsapp-float{width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;display:grid;place-items:center;box-shadow:0 6px 24px rgba(37,211,102,.45),0 2px 8px rgba(0,0,0,.15);transition:transform .2s,box-shadow .2s;border:0;cursor:pointer;text-decoration:none}
+.whatsapp-float:hover{transform:scale(1.08);box-shadow:0 8px 32px rgba(37,211,102,.6),0 4px 12px rgba(0,0,0,.2)}
+.whatsapp-float svg{width:30px;height:30px}
+.whatsapp-float-dismiss{position:absolute;top:-6px;left:-6px;width:22px;height:22px;border-radius:50%;background:var(--surface);border:1px solid var(--line);color:var(--muted);display:grid;place-items:center;cursor:pointer;opacity:0;transition:opacity .15s,transform .15s;transform:scale(.8);z-index:1}
+.whatsapp-float-wrapper:hover .whatsapp-float-dismiss{opacity:1;transform:scale(1)}
+.whatsapp-float-dismiss:hover{background:var(--danger);color:#fff;border-color:var(--danger)}
+.whatsapp-float-dismiss svg{width:12px;height:12px}
+.whatsapp-popup{position:absolute;bottom:68px;right:0;min-width:200px;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.2);overflow:hidden;animation:whatsapp-popup-in .15s}
+[dir="rtl"] .whatsapp-popup{right:auto;left:0}
+@keyframes whatsapp-popup-in{from{opacity:0;transform:translateY(8px)}}
+.whatsapp-popup-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--line)}
+.whatsapp-popup-header strong{font-size:12px}
+.whatsapp-popup-header button{background:none;border:0;color:var(--muted);cursor:pointer;padding:4px;display:grid;place-items:center}
+.whatsapp-popup-header button svg{width:16px}
+.whatsapp-popup-list{padding:6px}
+.whatsapp-popup-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:9px;color:var(--text);text-decoration:none;font-size:12px;font-weight:600;transition:background .12s}
+.whatsapp-popup-item:hover{background:var(--surface-2)}
+.whatsapp-popup-item svg{width:18px;color:#25d366}
+@media(max-width:600px){.whatsapp-float-wrapper{bottom:20px;right:20px}.whatsapp-float{width:54px;height:54px}.whatsapp-float svg{width:26px;height:26px}.whatsapp-float-dismiss{top:-4px;left:-4px;width:20px;height:20px}}
+.whatsapp-numbers-section{margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
+.whatsapp-number-row{display:flex;gap:8px;margin-top:8px;align-items:center}
+.whatsapp-label-input{width:120px;height:38px;border:1px solid var(--line);border-radius:8px;padding:0 10px;font-size:var(--ff-type-small);background:var(--surface);transition:border-color .15s}
+.whatsapp-label-input:focus{outline:0;border-color:var(--green)}
+.whatsapp-phone-input{flex:1;height:38px;border:1px solid var(--line);border-radius:8px;padding:0 10px;font-size:var(--ff-type-small);background:var(--surface);transition:border-color .15s}
+.whatsapp-phone-input:focus{outline:0;border-color:var(--green)}
+.whatsapp-remove-btn{width:32px;height:32px;border-radius:8px;background:transparent;color:var(--muted);display:grid;place-items:center;border:1px solid transparent;transition:background .15s,color .15s,border-color .15s}
+.whatsapp-remove-btn:hover{background:color-mix(in srgb,var(--danger) 12%,transparent);color:var(--danger);border-color:color-mix(in srgb,var(--danger) 25%,transparent)}
+.whatsapp-remove-btn svg{width:15px}
+.whatsapp-add-btn{margin-top:8px}
 @media(max-width:390px){
   .rental-view-card>footer .pipeline-actions>*{flex:1 1 120px}
   .rental-view-card>footer .pipeline-actions a,.rental-view-card>footer .pipeline-actions button{font-size:var(--ff-type-caption)!important}

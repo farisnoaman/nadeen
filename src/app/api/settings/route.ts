@@ -43,9 +43,10 @@ export async function GET() {
           baseCurrency: companies.baseCurrency,
           supportedCurrencies: companies.supportedCurrencies,
           exchangeRates: companies.exchangeRates,
+          whatsappNumbers: companies.whatsappNumbers,
         }).from(companies).where(eq(companies.id, user.companyId)).limit(1)
       : null;
-    return ok({ profile, preferences, loyalty, currency });
+    return ok({ profile, preferences, loyalty, currency, whatsappNumbers: currency?.[0]?.whatsappNumbers || [] });
   } catch (error) {
     return fail(error);
   }
@@ -76,6 +77,23 @@ export async function PATCH(request: Request) {
         .where(eq(users.id, user.id));
       if (companyName && companyCity && user.companyId) {
         await db.update(companies).set({ name: companyName, city: companyCity })
+          .where(eq(companies.id, user.companyId));
+      }
+      if (user.role === 'company' && user.companyId && Array.isArray(body.whatsappNumbers)) {
+        const numbers = body.whatsappNumbers
+          .filter((n: any) => n && typeof n.label === 'string' && typeof n.phone === 'string')
+          .map((n: any) => ({
+            label: String(n.label).trim().slice(0, 30),
+            phone: String(n.phone).trim(),
+          }))
+          .filter((n: any) => n.label && n.phone)
+          .slice(0, 10);
+        for (const n of numbers) {
+          if (!/^\+[1-9]\d{7,14}$/.test(n.phone)) {
+            throw new Error(`Invalid WhatsApp number format for "${n.label}". Use international format like +966501234567.`);
+          }
+        }
+        await db.update(companies).set({ whatsappNumbers: numbers })
           .where(eq(companies.id, user.companyId));
       }
 
