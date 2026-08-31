@@ -39,11 +39,9 @@ export function VehicleDetailContent({ data, variant = 'public', onRent, onBooki
   const busyPeriods = data.busyPeriods || [];
 
   useEffect(() => {
-    if (variant === 'public') {
-      setWhatsApp(v.whatsappNumbers || [], v.companyName);
-      return () => setWhatsApp([]);
-    }
-  }, [variant, v.whatsappNumbers, v.companyName, setWhatsApp]);
+    setWhatsApp(v.whatsappNumbers || [], v.companyName);
+    return () => setWhatsApp([]);
+  }, [v.whatsappNumbers, v.companyName, setWhatsApp]);
 
   const cities = [...new Set((v.pickupLocations || []).map((l: any) => l.city))];
   const sites = (v.pickupLocations || []).length;
