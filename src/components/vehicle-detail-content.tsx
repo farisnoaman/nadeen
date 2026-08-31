@@ -1,6 +1,6 @@
 'use client';
-import { CalendarDays, Check, ChevronDown, Copy, Fuel, Gauge, MapPin, ShieldCheck, Sparkles, Star, Tag, UserRound, Zap } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { CalendarDays, Check, ChevronDown, Copy, Fuel, Gauge, MapPin, Shield, ShieldCheck, Sparkles, Star, Tag, UserRound, Zap } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { VehicleImageCarousel } from './vehicle-image-carousel';
 import { Skeleton, StatusBadge } from './ui';
@@ -19,6 +19,25 @@ const SPEC_ICONS: Record<Spec['icon'], any> = {
 };
 const SPECS_VISIBLE = 6;
 const FEATURES_VISIBLE = 6;
+const TIER_ICONS: Record<string, any> = { basic: Shield, pro: ShieldCheck, premium: Star, full: Star };
+
+function useGridColumns() {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [cols, setCols] = useState(2);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const update = () => {
+      const count = window.getComputedStyle(el).gridTemplateColumns.split(' ').filter(Boolean).length;
+      if (count > 0) setCols(count);
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  return [ref, cols] as const;
+}
 
 export function VehicleDetailContent({ data, variant = 'public', onRent, onBookingOpen }: {
   data: any;
@@ -67,11 +86,16 @@ export function VehicleDetailContent({ data, variant = 'public', onRent, onBooki
   if (cities.length) specs.push({ key: 'cities', label: t('specPickupCities'), value: cities.join(' · '), icon: 'cities' });
   if (sites) specs.push({ key: 'sites', label: t('specPickupSiteCount'), value: `${sites} ${t('pickupSites')}`, icon: 'sites' });
 
-  const specsHidden = Math.max(0, specs.length - SPECS_VISIBLE);
-  const visibleSpecs = showAllSpecs ? specs : specs.slice(0, SPECS_VISIBLE);
+  const [specsGridRef, specCols] = useGridColumns();
+  const [featuresGridRef, featureCols] = useGridColumns();
+  // Fill complete grid rows before collapsing; the rest stay behind "show more".
+  const visibleSpecCount = showAllSpecs ? specs.length : Math.min(specs.length, Math.max(SPECS_VISIBLE, Math.ceil(SPECS_VISIBLE / specCols) * specCols));
+  const specsHidden = Math.max(0, specs.length - visibleSpecCount);
+  const visibleSpecs = specs.slice(0, visibleSpecCount);
   const features = v.features || [];
-  const featuresHidden = Math.max(0, features.length - FEATURES_VISIBLE);
-  const visibleFeatures = showAllFeatures ? features : features.slice(0, FEATURES_VISIBLE);
+  const visibleFeatureCount = showAllFeatures ? features.length : Math.min(features.length, Math.max(FEATURES_VISIBLE, Math.ceil(FEATURES_VISIBLE / featureCols) * featureCols));
+  const featuresHidden = Math.max(0, features.length - visibleFeatureCount);
+  const visibleFeatures = features.slice(0, visibleFeatureCount);
 
   function applyPromotion(promo: any) {
     setAppliedPromo(promo.code);
@@ -111,7 +135,7 @@ export function VehicleDetailContent({ data, variant = 'public', onRent, onBooki
               <p>{t('vehicleSpecsText')}</p>
             </div>
           </header>
-          <div className={`vehicle-specs-grid ${showAllSpecs ? 'expanded' : 'collapsed'}`}>
+          <div ref={specsGridRef} className={`vehicle-specs-grid ${showAllSpecs ? 'expanded' : 'collapsed'}`}>
             {visibleSpecs.map((spec) => {
               const Icon = SPEC_ICONS[spec.icon];
               return (
@@ -151,7 +175,7 @@ export function VehicleDetailContent({ data, variant = 'public', onRent, onBooki
           </header>
           {v.features?.length ? (
             <>
-              <div className="vehicle-features-grid">
+              <div ref={featuresGridRef} className="vehicle-features-grid">
                 {visibleFeatures.map((f: string) => (
                   <div className="vehicle-feature" key={f}>
                     <span className="vehicle-feature-icon"><Check /></span>
@@ -181,20 +205,23 @@ export function VehicleDetailContent({ data, variant = 'public', onRent, onBooki
               </div>
             </header>
             <div className="protection-packages-grid">
-              {v.protectionPackages.map((pkg: any) => (
-                <article key={pkg.id || pkg.tier} className={`protection-package-card tier-${pkg.tier}`}>
-                  <div className="protection-package-tier">{t(pkg.tier)}</div>
-                  <strong className="protection-package-name">{pkg.name}</strong>
-                  <div className="protection-package-price">
-                    <span>{formatVehicleMoney(pkg.dailyPrice, v.companyCurrency, currency, lang)}<small>/{t('day')}</small></span>
-                  </div>
-                  <div className="protection-package-deductible">
-                    <ShieldCheck />
-                    <span>{t('deductible')} {formatVehicleMoney(pkg.deductible, v.companyCurrency, currency, lang)}</span>
-                  </div>
-                  {pkg.description && <p className="protection-package-desc">{pkg.description}</p>}
-                </article>
-              ))}
+              {v.protectionPackages.map((pkg: any) => {
+                const TierIcon = TIER_ICONS[pkg.tier] || ShieldCheck;
+                return (
+                  <article key={pkg.id || pkg.tier} className={`protection-package-card tier-${pkg.tier}`}>
+                    <div className="protection-package-tier"><TierIcon />{t(pkg.tier)}</div>
+                    <strong className="protection-package-name">{pkg.name}</strong>
+                    <div className="protection-package-price">
+                      <span>{formatVehicleMoney(pkg.dailyPrice, v.companyCurrency, currency, lang)}<small>/{t('day')}</small></span>
+                    </div>
+                    <div className="protection-package-deductible">
+                      <ShieldCheck />
+                      <span>{t('deductible')} {formatVehicleMoney(pkg.deductible, v.companyCurrency, currency, lang)}</span>
+                    </div>
+                    {pkg.description && <p className="protection-package-desc">{pkg.description}</p>}
+                  </article>
+                );
+              })}
             </div>
           </section>
         )}
