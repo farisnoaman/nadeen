@@ -461,6 +461,34 @@ html[lang="en"]{--ff-type-caption:clamp(10px,calc(9px + .12vw),11.5px);--ff-type
 
 @media(max-width:750px){.vehicle-specs-grid{grid-template-columns:1fr}.vehicle-features-grid,.included>div{grid-template-columns:1fr}}
 
+.vehicle-trust.highlighted{background:var(--green-soft);border-color:color-mix(in srgb,var(--green) 30%,var(--line))}.vehicle-trust.highlighted h3{color:var(--green)}.vehicle-trust.highlighted li svg{color:var(--green)}
+
+.protection-overview-header{margin-bottom:14px}.protection-overview-header .eyebrow{color:var(--green);font-size:var(--ff-type-caption);text-transform:uppercase;letter-spacing:.13em;font-weight:800;display:flex;align-items:center;gap:6px;margin-bottom:6px}.protection-overview-header .eyebrow svg{width:14px}.protection-overview-header h3{font-size:var(--ff-type-card-title);letter-spacing:-.02em}.protection-overview-header p{font-size:var(--ff-type-small);color:var(--muted);margin-top:4px;max-width:62ch}
+.protection-packages-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.protection-package-card{border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:8px;background:var(--surface);transition:border-color .15s,box-shadow .15s}
+.protection-package-card:hover{border-color:color-mix(in srgb,var(--green) 35%,var(--line));box-shadow:0 2px 8px color-mix(in srgb,var(--green) 8%,transparent)}
+.protection-package-card.tier-premium,.protection-package-card.tier-full{border-color:color-mix(in srgb,var(--green) 25%,var(--line));background:color-mix(in srgb,var(--green) 4%,var(--surface))}
+.protection-package-tier{font-size:var(--ff-type-caption);font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--green);background:var(--green-soft);padding:3px 10px;border-radius:999px;align-self:flex-start}
+.protection-package-name{font-size:var(--ff-type-body);font-weight:750}
+.protection-package-price{font-size:var(--ff-type-card-title);font-weight:800;color:var(--text);margin:4px 0}.protection-package-price small{font-size:var(--ff-type-caption);color:var(--muted);font-weight:600}
+.protection-package-deductible{display:flex;align-items:center;gap:6px;font-size:var(--ff-type-small);color:var(--muted)}.protection-package-deductible svg{width:14px;color:var(--green)}
+.protection-package-desc{font-size:var(--ff-type-caption);color:var(--muted);line-height:1.5;margin-top:auto}
+
+.promotions-panel{padding:20px 22px 22px}.promotions-header{margin-bottom:14px}.promotions-header .eyebrow{color:var(--green);font-size:var(--ff-type-caption);text-transform:uppercase;letter-spacing:.13em;font-weight:800;display:flex;align-items:center;gap:6px;margin-bottom:6px}.promotions-header .eyebrow svg{width:14px}.promotions-header h3{font-size:var(--ff-type-card-title);letter-spacing:-.02em}.promotions-header p{font-size:var(--ff-type-small);color:var(--muted);margin-top:4px;max-width:62ch}
+.promotions-list{display:flex;flex-direction:column;gap:10px}
+.promotion-card{display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--surface);transition:border-color .15s,background .15s}.promotion-card:hover{border-color:color-mix(in srgb,var(--green) 35%,var(--line))}.promotion-card.applied{background:var(--green-soft);border-color:color-mix(in srgb,var(--green) 45%,var(--line))}
+.promotion-card-header{display:flex;align-items:center;gap:10px;min-width:0}.promotion-discount{display:flex;align-items:center;gap:5px;font-size:var(--ff-type-small);font-weight:800;color:var(--green);white-space:nowrap}.promotion-discount svg{width:15px}
+.promotion-card-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.promotion-card-body strong{font-size:var(--ff-type-small);font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.promotion-card-body small{font-size:var(--ff-type-caption);color:var(--muted)}
+.promotion-card .btn{flex:0 0 auto}.promotion-card .btn.applied{background:var(--green);color:#fff;border-color:var(--green);cursor:default}
+
+.busy-periods-panel{padding:20px 22px 22px}.busy-periods-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}.busy-periods-header .eyebrow{color:var(--amber,#d97706);font-size:var(--ff-type-caption);text-transform:uppercase;letter-spacing:.13em;font-weight:800;display:flex;align-items:center;gap:6px;margin-bottom:6px}.busy-periods-header .eyebrow svg{width:14px}.busy-periods-header h3{font-size:var(--ff-type-card-title);letter-spacing:-.02em}.busy-periods-header p{font-size:var(--ff-type-small);color:var(--muted);margin-top:4px;max-width:62ch}
+.busy-periods-list{display:flex;flex-direction:column;gap:8px}
+.busy-period-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2)}
+.busy-period-dates{display:flex;align-items:center;gap:8px;font-size:var(--ff-type-small);font-weight:600}
+.busy-period-arrow{color:var(--muted)}
+@media(max-width:650px){.protection-packages-grid{grid-template-columns:1fr}.promotion-card{flex-direction:column;align-items:stretch;gap:10px}.promotion-card .btn{width:100%}.busy-periods-header{flex-direction:column}.busy-period-dates{flex-wrap:wrap}}
+
+
 /* Professional Add Vehicle form */
 .vehicle-form{display:flex;flex-direction:column;gap:18px;padding:18px 24px 24px}
 .vehicle-form .form-grid{gap:14px}
