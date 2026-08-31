@@ -44,7 +44,7 @@ const rentalSelect = {
     allowedKilometers: rentals.allowedKilometers, excessKilometerRate: rentals.excessKilometerRate,
     kilometerPolicyId: rentals.kilometerPolicyId, kilometerPolicyName: rentals.kilometerPolicyName,
     excessDistanceCharge: rentals.excessDistanceCharge,
-  total: rentals.total, promoCode: rentals.promoCode,
+  total: rentals.total, promoCode: rentals.promoCode, promoDetails: rentals.promoDetails,
   currency: rentals.currency, exchangeRate: rentals.exchangeRate,
   invoiceToken: rentals.invoiceToken, pickupCity: rentals.pickupCity,
   pickupLocation: rentals.pickupLocation, returnCity: rentals.returnCity,
@@ -169,12 +169,15 @@ export async function POST(request: Request) {
 
     const subtotal = roundMoney(Number(vehicle[rateField[type]]) * quantity);
     let discount = 0;
-    let promoCode: string | null = null;
-    let promoId: number | null = null;
-    if (body.promoCode) {
+    const appliedPromoCodes: string[] = [];
+    const appliedPromoIds: number[] = [];
+    const appliedPromoDetails: { code: string; type: 'percentage' | 'fixed'; value: number; discount: number }[] = [];
+    const promoCodes = Array.isArray(body.promoCodes) ? body.promoCodes : (body.promoCode ? [body.promoCode] : []);
+    for (const rawCode of promoCodes) {
+      if (!rawCode) continue;
       const [promo] = await db.select().from(promotions).where(and(
         eq(promotions.companyId, vehicle.companyId),
-        eq(promotions.code, String(body.promoCode).toUpperCase()),
+        eq(promotions.code, String(rawCode).toUpperCase()),
       )).limit(1);
       if (!promo || promotionState(promo) !== 'live' || quantity < promo.minQuantity) {
         throw new Error('This promotion is not valid for this booking.');
@@ -186,10 +189,13 @@ export async function POST(request: Request) {
         )).limit(1);
         if (!link) throw new Error('This promotion does not apply to this vehicle.');
       }
-      discount = roundMoney(discountFor(subtotal, promo));
-      promoCode = promo.code;
-      promoId = promo.id;
+      const promoDiscount = roundMoney(discountFor(subtotal, promo));
+      discount += promoDiscount;
+      appliedPromoCodes.push(promo.code);
+      appliedPromoIds.push(promo.id);
+      appliedPromoDetails.push({ code: promo.code, type: promo.type, value: promo.value, discount: promoDiscount });
     }
+    const promoCode = appliedPromoCodes.length > 0 ? appliedPromoCodes.join(',') : null;
 
     const rentalDays = Math.max(1, Math.ceil((endsAt.getTime() - startsAt.getTime()) / 86_400_000));
     const returnCity = String(body.returnCity || '').trim();
@@ -281,7 +287,7 @@ export async function POST(request: Request) {
         kilometerPolicyId:mileagePolicy?.id || null,
         kilometerPolicyName:mileagePolicy?.name || 'Vehicle mileage terms',
         excessDistanceCharge: 0, total: roundMoney(subtotal + extrasSubtotal + protectionSubtotal - discount - loyalty.discount),
-        invoiceToken: randomUUID(), promoCode,
+        invoiceToken: randomUUID(), promoCode, promoDetails: appliedPromoDetails,
         pickupCity: pickupLocation.city, pickupLocation: pickupLocation.site,
         returnCity, returnLocation,
       }).returning();
@@ -292,9 +298,9 @@ export async function POST(request: Request) {
           unitPrice: line.service.dailyPrice, days: line.days, discount: 0, subtotal: line.subtotal,
         }))).returning();
       }
-      if (promoId) {
+      for (const pid of appliedPromoIds) {
         await tx.update(promotions).set({ redemptions: sql`${promotions.redemptions} + 1` })
-          .where(eq(promotions.id, promoId));
+          .where(eq(promotions.id, pid));
       }
       await tx.insert(notifications).values({
         companyId: vehicle.companyId,

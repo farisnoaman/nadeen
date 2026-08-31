@@ -255,6 +255,7 @@ ALTER TABLE rentals ADD COLUMN IF NOT EXISTS paid_at TIMESTAMPTZ;
 ALTER TABLE rentals ADD COLUMN IF NOT EXISTS pickup_city TEXT NOT NULL DEFAULT '';
 ALTER TABLE rentals ADD COLUMN IF NOT EXISTS return_city TEXT NOT NULL DEFAULT '';
 ALTER TABLE rentals ADD COLUMN IF NOT EXISTS return_location TEXT NOT NULL DEFAULT '';
+ALTER TABLE rentals ADD COLUMN IF NOT EXISTS promo_details JSONB NOT NULL DEFAULT '[]';
 UPDATE rentals SET pickup_city = pickup_location WHERE pickup_city = '';
 UPDATE rentals SET return_city = return_location WHERE return_city = '' AND return_location <> '';
 ALTER TABLE rentals ADD COLUMN IF NOT EXISTS protection_package_id INTEGER REFERENCES insurance_packages(id) ON DELETE SET NULL;

@@ -363,6 +363,7 @@ export const rentals = pgTable('rentals', {
   currency: text('currency').notNull().default('USD'),
   exchangeRate: doublePrecision('exchange_rate').notNull().default(1),
   promoCode: text('promo_code'),
+  promoDetails: jsonb('promo_details').$type<{ code: string; type: 'percentage' | 'fixed'; value: number; discount: number }[]>().default([]),
   invoiceToken: text('invoice_token').notNull(),
   pickupCity: text('pickup_city').notNull().default(''),
   pickupLocation: text('pickup_location').notNull(),

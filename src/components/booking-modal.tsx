@@ -1,5 +1,5 @@
 'use client';
-import { AlertTriangle, ArrowRight, Award, Baby, BriefcaseBusiness, CalendarDays, CheckCircle2, Clock3, MapPin, Minus, Plus, ShieldCheck, Tag, UserRound, Wifi } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Award, Baby, BriefcaseBusiness, CalendarDays, CheckCircle2, Clock3, Copy, MapPin, Minus, Plus, ShieldCheck, Tag, UserRound, Wifi, Zap } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AvailabilityCalendar } from './availability-calendar';
@@ -56,7 +56,7 @@ export function BookingModal({ vehicle, onClose }: { vehicle: any; onClose: () =
   const [returnSameAsPickup, setReturnSameAsPickup] = useState(true);
   const [returnCity, setReturnCity] = useState('');
   const [returnLocation, setReturnLocation] = useState('');
-  const [promo, setPromo] = useState<any>(null);
+  const [appliedPromos, setAppliedPromos] = useState<any[]>([]);
   const [conflict, setConflict] = useState<any>(null);
   const [busy, setBusy] = useState(false);
   useEffect(() => {
@@ -75,7 +75,7 @@ export function BookingModal({ vehicle, onClose }: { vehicle: any; onClose: () =
         setProtectionPackageId(firstPackage?.id || firstPackage?.tier || null);
       });
   }, [vehicle]);
-  useEffect(() => setPromo(null), [type, quantity]);
+  useEffect(() => setAppliedPromos([]), [type, quantity]);
 
   const rates: any = { hour: vehicle.hourlyRate, day: vehicle.dailyRate, week: vehicle.weeklyRate, month: vehicle.monthlyRate };
   const startsAt = useMemo(() => combine(startDate, pickupTime), [startDate, pickupTime]);
@@ -119,11 +119,12 @@ export function BookingModal({ vehicle, onClose }: { vehicle: any; onClose: () =
   const selectedProtection = protectionPackages.find((item: any) => item.id === protectionPackageId || (!item.id && item.tier === protectionPackageId)) || protectionPackages[0];
   const protectionTotal = Number(selectedProtection?.dailyPrice || 0) * rentalDays;
   const loyalty = details?.loyalty?.enabled ? details.loyalty : null;
+  const totalPromoDiscount = appliedPromos.reduce((sum: number, p: any) => sum + Number(p.discount || 0), 0);
   const loyaltyDiscount = loyalty ? Math.min(
-    Math.max(0, subtotal - Number(promo?.discount || 0)),
+    Math.max(0, subtotal - totalPromoDiscount),
     subtotal * Number(loyalty.currentLevel?.discountPercentage || 0) / 100,
   ) : 0;
-  const proposalTotal = subtotal + servicesTotal + protectionTotal - (promo?.discount || 0) - loyaltyDiscount;
+  const proposalTotal = subtotal + servicesTotal + protectionTotal - totalPromoDiscount - loyaltyDiscount;
   const estimatedLoyaltyPoints = loyalty ? Math.max(0, Math.floor(proposalTotal * Number(loyalty.pointsPerCurrency || 0))) : 0;
   const pickupLocations = details?.vehicle?.pickupLocations || vehicle.pickupLocations || [];
   const selectedPickup = pickupLocations.find((location:any) => `${location.city}\u0000${location.site}` === pickupKey)
@@ -182,8 +183,17 @@ export function BookingModal({ vehicle, onClose }: { vehicle: any; onClose: () =
   const apply = async () => {
     try {
       const data: any = await api(`/promotions/validate?code=${encodeURIComponent(code)}&vehicleId=${vehicle.id}&base=${subtotal}&quantity=${quantity}`);
-      setPromo(data); toast(t('promoApplied'));
-    } catch (error: any) { setPromo(null); toast(error.message, true); }
+      if (appliedPromos.some((p: any) => p.promotion.code === data.promotion.code)) { toast(t('appliedPromotion')); return; }
+      setAppliedPromos(prev => [...prev, data]); setCode(''); toast(t('promoApplied'));
+    } catch (error: any) { toast(error.message, true); }
+  };
+  const togglePromo = async (promo: any) => {
+    const existing = appliedPromos.find((p: any) => p.promotion.code === promo.code);
+    if (existing) { setAppliedPromos(prev => prev.filter((p: any) => p.promotion.code !== promo.code)); return; }
+    try {
+      const data: any = await api(`/promotions/validate?code=${encodeURIComponent(promo.code)}&vehicleId=${vehicle.id}&base=${subtotal}&quantity=${quantity}`);
+      setAppliedPromos(prev => [...prev, data]); toast(t('promoApplied'));
+    } catch (error: any) { toast(error.message, true); }
   };
   const book = async () => {
     if (!endDate) return toast(t('chooseRange'), true);
@@ -193,7 +203,7 @@ export function BookingModal({ vehicle, onClose }: { vehicle: any; onClose: () =
       await api('/rentals', { method: 'POST', body: JSON.stringify({
         vehicleId: vehicle.id, rateType: type, quantity,
         currency,
-        startsAt: startsAt.toISOString(), endsAt: returnAt.toISOString(), promoCode: promo?.promotion.code,
+        startsAt: startsAt.toISOString(), endsAt: returnAt.toISOString(), promoCodes: appliedPromos.map((p: any) => p.promotion.code),
         protectionPackageId: selectedProtection?.id || null,
         protectionTier: selectedProtection?.tier || 'basic',
         pickupCity: selectedPickup?.city,
@@ -242,11 +252,24 @@ export function BookingModal({ vehicle, onClose }: { vehicle: any; onClose: () =
         </div>
         {conflict?.code === 'RESERVATION_OVERLAP' && <div className="overlap-result"><AlertTriangle /><div><strong>{t('overlapDetected')}</strong><span>{conflict.message}</span>{conflict.availability?.availableUntil && <button type="button" onClick={() => { const limit = new Date(conflict.availability.availableUntil); onRangeChange(startDate, keyOf(new Date(limit.getTime() - dayMs))); setConflict(null); }}>{t('useAvailableRange')} {dateTime(conflict.availability.availableUntil)}</button>}</div></div>}
         {loyalty&&<section className={`booking-loyalty loyalty-rank-${loyalty.currentLevel?.rank||0}`}><span><Award /></span><div><small>{t('yourLoyaltyLevel')}</small><strong>{loyalty.currentLevel?.name} · {Number(loyalty.points).toLocaleString()} {t('points')}</strong><p>{loyalty.currentLevel?.discountPercentage>0?t('loyaltyDiscountAppliedText').replace('{discount}',String(loyalty.currentLevel.discountPercentage)):t('earnPointsThisRental')} · <b>+{estimatedLoyaltyPoints} {t('estimatedPoints')}</b></p>{loyalty.nextLevel&&<em><i style={{width:`${loyalty.progress}%`}} />{Number(loyalty.pointsToNext).toLocaleString()} {t('pointsTo')} {loyalty.nextLevel.name}</em>}</div><aside><strong>{loyalty.currentLevel?.discountPercentage||0}%</strong><small>{t('automaticDiscount')}</small></aside></section>}
-        <section className="protection-picker"><header><div><span><ShieldCheck />{t('rentalProtection')}</span><small>{t('ksaProtectionDisclosure')}</small></div><em>{t(vehicle.insuranceCoverage || details?.vehicle?.insuranceCoverage || 'third_party')}</em></header><div>{protectionPackages.map((item: any) => <button type="button" key={item.id || item.tier} className={(item.id ? selectedProtection?.id === item.id : selectedProtection?.tier === item.tier) ? 'active' : ''} onClick={() => setProtectionPackageId(item.id || item.tier)}><span><strong>{item.name || t(`protection_${item.tier}`)}</strong><small>{t(`protection_${item.tier}`)} · {item.coverage.map((code: string) => t(`coverage_${code}`)).join(' · ')}</small></span><span><strong>{item.dailyPrice > 0 ? formatVehicleMoney(item.dailyPrice, vehicle.companyCurrency, currency, lang) : t('included')}</strong><small>{t('deductible')}: {formatVehicleMoney(item.deductible, vehicle.companyCurrency, currency, lang)}</small></span></button>)}</div></section><div className="protection-contract-facts"><span><small>{t('dailyKilometerAllowance')}</small><strong>{Number(details?.vehicle?.dailyKilometerAllowance || vehicle.dailyKilometerAllowance || 0).toLocaleString()} {t('kilometers')}</strong></span><span><small>{t('allowedKilometers')}</small><strong>{((details?.vehicle?.dailyKilometerAllowance || vehicle.dailyKilometerAllowance || 0) * rentalDays).toLocaleString()} {t('kilometers')}</strong></span><span><small>{t('excessKilometerRate')}</small><strong>{formatVehicleMoney(details?.vehicle?.excessKilometerRate || vehicle.excessKilometerRate || 0, vehicle.companyCurrency, currency, lang)}/{t('kilometers')}</strong></span><span><small>{t('fuelPolicy')}</small><strong>{t(details?.vehicle?.fuelPolicy || vehicle.fuelPolicy || 'same_to_same')}</strong></span></div>
+        <section className="protection-picker"><header><div><span><ShieldCheck />{t('rentalProtection')}</span><small>{t('ksaProtectionDisclosure')}</small></div><em>{t(vehicle.insuranceCoverage || details?.vehicle?.insuranceCoverage || 'third_party')}</em></header><div>{protectionPackages.map((item: any) => <button type="button" key={item.id || item.tier} className={(item.id ? selectedProtection?.id === item.id : selectedProtection?.tier === item.tier) ? 'active' : ''} onClick={() => setProtectionPackageId(item.id || item.tier)}><span><strong>{item.name || t(`protection_${item.tier}`)}</strong><small>{t(`protection_${item.tier}`)} · {item.coverage.map((code: string) => t(`coverage_${code}`)).join(' · ')}</small></span><span><strong>{item.dailyPrice > 0 ? formatVehicleMoney(item.dailyPrice, vehicle.companyCurrency, currency, lang) : t('included')}</strong><small>{t('deductible')}: {formatVehicleMoney(item.deductible, vehicle.companyCurrency, currency, lang)}</small></span></button>)}</div></section>        <div className="protection-contract-facts"><span><small>{t('dailyKilometerAllowance')}</small><strong>{Number(details?.vehicle?.dailyKilometerAllowance || vehicle.dailyKilometerAllowance || 0).toLocaleString()} {t('kilometers')}</strong></span><span><small>{t('allowedKilometers')}</small><strong>{((details?.vehicle?.dailyKilometerAllowance || vehicle.dailyKilometerAllowance || 0) * rentalDays).toLocaleString()} {t('kilometers')}</strong></span><span><small>{t('excessKilometerRate')}</small><strong>{formatVehicleMoney(details?.vehicle?.excessKilometerRate || vehicle.excessKilometerRate || 0, vehicle.companyCurrency, currency, lang)}/{t('kilometers')}</strong></span><span><small>{t('fuelPolicy')}</small><strong>{t(details?.vehicle?.fuelPolicy || vehicle.fuelPolicy || 'same_to_same')}</strong></span></div>
+        {(details?.promotions || []).filter((p: any) => p && typeof p.value === 'number' && p.value > 0).length > 0 && (
+          <section className="booking-promotions"><header><div><span><Zap />{t('availablePromotionsTitle')}</span></div></header><div className="booking-promotions-list">{(details?.promotions || []).filter((p: any) => p && typeof p.value === 'number' && p.value > 0).map((promo: any) => {
+            const discount = promo.type === 'percent'
+              ? `${t('discountPercent').replace('%s', String(promo.value))} · ${t('percentage')}`
+              : `${t('discountFixed').replace('%s', formatVehicleMoney(promo.value, vehicle.companyCurrency, currency, lang))} · ${t('fixed')}`;
+            const isApplied = appliedPromos.some((p: any) => p.promotion.code === promo.code);
+            return <article key={promo.id || promo.code} className={`booking-promo-row ${isApplied ? 'applied' : ''}`}>
+              <span className="booking-promo-discount"><Zap />{discount}</span>
+              <span className="booking-promo-code">{promo.code}</span>
+              <button type="button" className={`btn ${isApplied ? 'applied' : 'primary'} small`} onClick={() => togglePromo(promo)}>{isApplied ? t('appliedPromotion') : t('applyPromotion')}</button>
+            </article>;
+          })}</div></section>
+        )}
         <section className="booking-services"><header><div><span>{t('premiumServices')}</span><strong>{t('customizeTrip')}</strong></div><small>{t('renterDaysOnly')}</small></header><div>{serviceCatalog.map(service => { const Icon = serviceIcons[service.key] || Tag; const days = serviceDays[service.id] || 0; return <article className={days ? 'selected' : ''} key={service.id}><button type="button" className="service-select" onClick={() => toggleService(service.id)}><span><Icon /></span><div><strong>{t(service.name)}</strong><small>{t(service.key === 'child-seat' ? 'childSeatDescription' : `${service.key}Description`)}</small></div><em>{formatVehicleMoney(service.dailyPrice, vehicle.companyCurrency, currency, lang)}<small>/{t('day')}</small></em></button>{days > 0 && <div className="service-days"><span>{t('numberDays')}</span><div><button type="button" onClick={() => changeServiceDays(service.id, days - 1)} disabled={days <= 1}><Minus /></button><strong>{days}</strong><button type="button" onClick={() => changeServiceDays(service.id, days + 1)} disabled={days >= rentalDays}><Plus /></button></div><em>{formatVehicleMoney(service.dailyPrice * days, vehicle.companyCurrency, currency, lang)}</em></div>}</article>; })}</div></section>
         <label>{t('promoOptional')}<div className="promo-input"><Tag /><input value={code} onChange={event => setCode(event.target.value.toUpperCase())} placeholder="SUMMER20" /><button type="button" onClick={apply} disabled={!code}>{t('apply')}</button></div></label>
-        {promo && <div className="promo-success"><CheckCircle2 /><span><strong>{promo.promotion.name}</strong>{t('promoApplied')}</span><em>−{formatVehicleMoney(promo.discount, vehicle.companyCurrency, currency, lang)}</em></div>}
-        <div className="proposal-breakdown"><header><span>{t('rentalProposal')}</span><small>{t('pdfAfterConfirmation')}</small></header><div><span>{vehicle.make} {vehicle.model} · {quantity} {t(type)}{quantity > 1 ? 's' : ''}</span><strong>{formatVehicleMoney(subtotal, vehicle.companyCurrency, currency, lang)}</strong></div>{selectedProtection && <div><span>{selectedProtection.name || t(`protection_${selectedProtection.tier}`)}<small>{rentalDays} {t(rentalDays > 1 ? 'days' : 'day')} × {formatVehicleMoney(selectedProtection.dailyPrice, vehicle.companyCurrency, currency, lang)}</small></span><strong>{formatVehicleMoney(protectionTotal, vehicle.companyCurrency, currency, lang)}</strong></div>}{selectedServices.map(service => <div key={service.id}><span>{t(service.name)}<small>{service.days} {t(service.days > 1 ? 'days' : 'day')} × {formatVehicleMoney(service.dailyPrice, vehicle.companyCurrency, currency, lang)}</small></span><strong>{formatVehicleMoney(service.lineTotal, vehicle.companyCurrency, currency, lang)}</strong></div>)}{promo && <div className="discount"><span>{t('discount')} · {promo.promotion.code}</span><strong>−{formatVehicleMoney(promo.discount, vehicle.companyCurrency, currency, lang)}</strong></div>}{loyalty&&loyaltyDiscount>0&&<div className="discount loyalty-discount"><span>{t('loyaltyDiscount')} · {loyalty.currentLevel.name}<small>{loyalty.currentLevel.discountPercentage}% · {t('estimatedPointsEarned')}: +{estimatedLoyaltyPoints}</small></span><strong>−{formatVehicleMoney(loyaltyDiscount, vehicle.companyCurrency, currency, lang)}</strong></div>}<div className="grand-total"><span>{t('total')}</span><strong>{formatVehicleMoney(proposalTotal, vehicle.companyCurrency, currency, lang)}</strong></div></div>
+        {appliedPromos.length > 0 && <div className="promo-success"><CheckCircle2 /><span><strong>{appliedPromos.map((p: any) => p.promotion.code).join(', ')}</strong>{t('promoApplied')}</span><em>−{formatVehicleMoney(totalPromoDiscount, vehicle.companyCurrency, currency, lang)}</em></div>}
+        <div className="proposal-breakdown"><header><span>{t('rentalProposal')}</span><small>{t('pdfAfterConfirmation')}</small></header><div><span>{vehicle.make} {vehicle.model} · {quantity} {t(type)}{quantity > 1 ? 's' : ''}</span><strong>{formatVehicleMoney(subtotal, vehicle.companyCurrency, currency, lang)}</strong></div>{selectedProtection && <div><span>{selectedProtection.name || t(`protection_${selectedProtection.tier}`)}<small>{rentalDays} {t(rentalDays > 1 ? 'days' : 'day')} × {formatVehicleMoney(selectedProtection.dailyPrice, vehicle.companyCurrency, currency, lang)}</small></span><strong>{formatVehicleMoney(protectionTotal, vehicle.companyCurrency, currency, lang)}</strong></div>}{selectedServices.map(service => <div key={service.id}><span>{t(service.name)}<small>{service.days} {t(service.days > 1 ? 'days' : 'day')} × {formatVehicleMoney(service.dailyPrice, vehicle.companyCurrency, currency, lang)}</small></span><strong>{formatVehicleMoney(service.lineTotal, vehicle.companyCurrency, currency, lang)}</strong></div>)}{appliedPromos.map((p: any) => <div className="discount" key={p.promotion.code}><span>{t('discount')} · {p.promotion.code}<small>{p.promotion.type === 'percent' ? `${p.promotion.value}% (${t('percentage')})` : `${t('fixed')}`}</small></span><strong>−{formatVehicleMoney(p.discount, vehicle.companyCurrency, currency, lang)}</strong></div>)}{loyalty&&loyaltyDiscount>0&&<div className="discount loyalty-discount"><span>{t('loyaltyDiscount')} · {loyalty.currentLevel.name}<small>{loyalty.currentLevel.discountPercentage}% · {t('estimatedPointsEarned')}: +{estimatedLoyaltyPoints}</small></span><strong>−{formatVehicleMoney(loyaltyDiscount, vehicle.companyCurrency, currency, lang)}</strong></div>}<div className="grand-total"><span>{t('total')}</span><strong>{formatVehicleMoney(proposalTotal, vehicle.companyCurrency, currency, lang)}</strong></div></div>
         <button className="btn primary booking-submit" onClick={book} disabled={busy || requestedConflict || !endDate || !selectedPickup || returnCity.trim().length < 2 || returnLocation.trim().length < 2}>{busy ? t('loading') : <>{t('confirmBooking')}<ArrowRight /></>}</button>
       </section>
     </div>

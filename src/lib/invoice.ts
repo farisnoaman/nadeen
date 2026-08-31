@@ -36,7 +36,7 @@ export async function loadInvoice(rentalId: number, token?: string | null) {
     allowedKilometers: rentals.allowedKilometers, excessKilometerRate: rentals.excessKilometerRate,
     kilometerPolicyId: rentals.kilometerPolicyId, kilometerPolicyName: rentals.kilometerPolicyName,
     excessDistanceCharge: rentals.excessDistanceCharge,
-    total: rentals.total, promoCode: rentals.promoCode,
+    total: rentals.total, promoCode: rentals.promoCode, promoDetails: rentals.promoDetails,
     currency: rentals.currency, exchangeRate: rentals.exchangeRate,
     invoiceToken: rentals.invoiceToken, pickupCity: rentals.pickupCity,
     pickupLocation: rentals.pickupLocation, returnCity: rentals.returnCity,
@@ -103,6 +103,7 @@ const pdfTranslations: Record<string, string> = {
   Rate: 'خطة السعر', 'Allowed KM per day': 'الكيلومترات المسموحة يومياً', 'Total allowance': 'إجمالي المسافة المسموحة', 'Fee per excess KM': 'رسوم كل كيلومتر زائد', seats: 'مقاعد', km: 'كم',
   'RENTAL SCHEDULE': 'جدول الإيجار', 'DETAILED RENT BREAKDOWN': 'تفاصيل تكلفة الإيجار',
   rental: 'إيجار', Promotion: 'العرض', 'Vehicle rental discount': 'خصم إيجار السيارة',
+  Percentage: 'نسبة مئوية', 'Fixed amount': 'مبلغ ثابت',
   'Loyalty discount':'خصم الولاء', 'Loyalty points earned':'نقاط الولاء المكتسبة', points:'نقطة',
   day: 'يوم', days: 'أيام', 'Service discount': 'خصم الخدمة', discount: 'خصم',
   'Additional company discount': 'خصم إضافي من الشركة', 'Applied by company administrator': 'طبقه مدير الشركة',
@@ -217,7 +218,8 @@ export async function createInvoicePdf(invoice: any, locale: 'en' | 'ar' = 'ar')
 
   draw(tx('DETAILED RENT BREAKDOWN'), 42, 338, 7, bold, green);
   const estimatedRows = 2.5
-    + (r.fuelCharge > 0 ? 1 : 0) + (r.excessDistanceCharge > 0 ? 1 : 0) + (r.discount > 0 ? 1 : 0)
+    + (r.fuelCharge > 0 ? 1 : 0) + (r.excessDistanceCharge > 0 ? 1 : 0)
+    + (r.promoDetails && r.promoDetails.length > 0 ? r.promoDetails.length : (r.discount > 0 ? 1 : 0))
     + (r.loyaltyDiscount > 0 ? 1 : 0) + (r.loyaltyPointsEarned > 0 ? 1 : 0)
     + invoice.services.length + invoice.services.filter((service:any) => service.discount > 0).length
     + (r.extraDiscount > 0 ? 1 : 0);
@@ -235,7 +237,14 @@ export async function createInvoicePdf(invoice: any, locale: 'en' | 'ar' = 'ar')
   y -= lineGap * 0.5;
   if (r.fuelCharge > 0) lineItem(tx('Fuel charge'), `${r.pickupFuelLevel ?? '-'}% -> ${r.returnFuelLevel ?? '-'}%`, r.fuelCharge);
   if (r.excessDistanceCharge > 0) lineItem(tx('Excess distance'), `${Math.max(0, (r.returnOdometer || 0) - (r.pickupOdometer || 0) - (r.allowedKilometers || 0))} ${tx('km')} × ${money(r.excessKilometerRate, locale)}`, r.excessDistanceCharge);
-  if (r.discount > 0) lineItem(`${tx('Promotion')} ${r.promoCode || ''}`, tx('Vehicle rental discount'), r.discount, true);
+  if (r.promoDetails && r.promoDetails.length > 0) {
+    for (const pd of r.promoDetails) {
+      const typeLabel = pd.type === 'percentage' ? `${pd.value}% (${tx('Percentage')})` : `${tx('Fixed amount')} · ${money(pd.value, locale)}`;
+      lineItem(`${tx('Promotion')} ${pd.code}`, typeLabel, pd.discount, true);
+    }
+  } else if (r.discount > 0) {
+    lineItem(`${tx('Promotion')} ${r.promoCode || ''}`, tx('Vehicle rental discount'), r.discount, true);
+  }
   if (r.loyaltyDiscount > 0) lineItem(`${tx('Loyalty discount')} · ${r.loyaltyLevelName || ''}`, `${r.loyaltyDiscountPercentage}%`, r.loyaltyDiscount, true);
   if (r.loyaltyPointsEarned > 0) lineItem(tx('Loyalty points earned'), r.loyaltyLevelName || '', `+${r.loyaltyPointsEarned} ${tx('points')}`);
   for (const service of invoice.services) {
