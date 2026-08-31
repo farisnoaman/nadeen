@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { CarFront, Eye, Fuel, Gauge, Heart, MapPin, Search, SlidersHorizontal, Star, UserRound, X, Zap } from 'lucide-react';
+import { CarFront, Fuel, Gauge, Heart, MapPin, Search, SlidersHorizontal, Star, UserRound, X, Zap } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { VehicleImageCarousel } from '@/components/vehicle-image-carousel';
@@ -84,7 +84,6 @@ export default function SavedVehiclesPage() {
               <footer>
                 <span>{t('from')} <strong>{money(vehicle[fields[rate]])}</strong> / {t(rate)}</span>
                 <div>
-                  <Link href={`/dashboard/browse/${vehicle.id}`} onClick={(e) => e.stopPropagation()} className="round-link" aria-label={t('viewDetails')}><Eye /></Link>
                   <button className="btn primary small" onClick={(e) => openRent(vehicle, e)}>{t('rentNow')}</button>
                 </div>
               </footer>

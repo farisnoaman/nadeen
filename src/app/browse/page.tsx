@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { ArrowRight, CarFront, Eye, Fuel, Gauge, Heart, MapPin, Search, SlidersHorizontal, Star, UserRound, X, Zap } from 'lucide-react';
+import { ArrowRight, CarFront, Fuel, Gauge, Heart, MapPin, Search, SlidersHorizontal, Star, UserRound, X, Zap } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { LanguageToggle, ThemeToggle, CurrencyToggle } from '@/components/theme-controls';
@@ -191,14 +191,6 @@ export default function BrowsePage() {
           <footer style={{ position: 'relative', zIndex: 3 }}>
             <span>{t('from')} <strong>{formatVehicleMoney(vehicle[fields[rate]], vehicle.companyCurrency, currency, lang)}</strong> / {t(rate)}</span>
             <div style={{ position: 'relative', zIndex: 99, display: 'flex', gap: '0.5rem' }}>
-              <Link
-                href={`/browse/${vehicle.id}`}
-                className="round-link"
-                title="View vehicle details"
-                aria-label="View vehicle details"
-              >
-                <Eye/>
-              </Link>
               <button
                 type="button"
                 className="btn primary small"
