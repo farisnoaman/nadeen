@@ -189,7 +189,7 @@ export default function BrowsePage() {
           </div>
 
           <footer style={{ position: 'relative', zIndex: 3 }}>
-            <span>{t('from')} <strong>{formatVehicleMoney(vehicle[fields[rate]], vehicle.companyCurrency, currency, lang)}</strong> / {t(rate)}</span>
+            <span className="card-price"><small>{t('from')}</small><div><strong>{formatVehicleMoney(vehicle[fields[rate]], vehicle.companyCurrency, currency, lang)}</strong><em>/{t(rate)}</em></div></span>
             <div style={{ position: 'relative', zIndex: 99, display: 'flex', gap: '0.5rem' }}>
               <button
                 type="button"

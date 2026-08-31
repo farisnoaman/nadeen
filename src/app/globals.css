@@ -519,6 +519,16 @@ html[lang="en"]{--ff-type-caption:clamp(10px,calc(9px + .12vw),11.5px);--ff-type
 .date-range-trigger>span{border-radius:8px;padding:2px 6px;margin:-2px -6px;transition:background .15s}
 .date-range-trigger.picking-return>span:last-child,.date-range-trigger.picking-start>span:first-of-type{background:var(--green-soft)}
 
+/* Card price block */
+.vehicle-card .card-price{display:flex;align-items:center;gap:5px;min-width:0}
+.vehicle-card .card-price>small{font-size:var(--ff-type-caption);color:var(--muted);text-transform:uppercase;letter-spacing:.07em;font-weight:750;white-space:nowrap}
+.vehicle-card .card-price>div{display:flex;align-items:baseline;gap:3px;min-width:0}
+.vehicle-card .card-price strong{font-size:17px;color:var(--green);font-weight:850;letter-spacing:-.02em;line-height:1.1;white-space:nowrap}
+.vehicle-card .card-price em{font-style:normal;font-size:var(--ff-type-caption);color:var(--muted);font-weight:700;white-space:nowrap}
+/* Full-bleed tinted card footer */
+.vehicle-card .vehicle-body>footer{border-top:1px solid color-mix(in srgb,var(--green) 22%,var(--line));padding:11px 16px;margin:0 -16px -16px;background:color-mix(in srgb,var(--green) 12%,var(--green-soft));transition:background .18s}
+.vehicle-card:hover .vehicle-body>footer{background:color-mix(in srgb,var(--green) 22%,var(--green-soft))}
+
 /* Vehicle detail title row */
 .market-detail-title{align-items:center;gap:16px;padding:14px 2px 16px}
 .market-detail-title>div:first-child{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:4px;container-type:inline-size}

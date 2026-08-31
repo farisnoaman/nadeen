@@ -82,7 +82,7 @@ export default function SavedVehiclesPage() {
               </div>
               <div className="marketplace-locations"><MapPin /><span>{[...new Set((vehicle.pickupLocations || []).map((location: any) => location.city))].join(' · ')}</span><small>{(vehicle.pickupLocations || []).length} {t('pickupSites')}</small></div>
               <footer>
-                <span>{t('from')} <strong>{money(vehicle[fields[rate]])}</strong> / {t(rate)}</span>
+                <span className="card-price"><small>{t('from')}</small><div><strong>{money(vehicle[fields[rate]])}</strong><em>/{t(rate)}</em></div></span>
                 <div>
                   <button className="btn primary small" onClick={(e) => openRent(vehicle, e)}>{t('rentNow')}</button>
                 </div>
