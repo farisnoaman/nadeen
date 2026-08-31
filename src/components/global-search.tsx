@@ -172,7 +172,7 @@ export function GlobalSearch() {
   return (
     <div className={`global-search ${open ? 'open' : ''}`}>
       {open && <button type="button" className="global-search-scrim" onClick={() => setOpen(false)} aria-label={t('close')} />}
-      <label className="global-search-input" htmlFor="fleetflow-global-search">
+      <label className="global-search-input" htmlFor="fleetflow-global-search" onClick={() => { if (!open) { setOpen(true); requestAnimationFrame(() => inputRef.current?.focus()); } }}>
         <Search />
         <input
           ref={inputRef}
