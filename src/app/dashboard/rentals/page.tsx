@@ -121,6 +121,7 @@ export default function RentalsPage() {
   const [tab, setTab] = useState('all');
   const [search, setSearch] = useState('');
   const [view, setView] = useState<RentalView>('table');
+  const [isMobile, setIsMobile] = useState(false);
   const [billing, setBilling] = useState<Rental | null>(null);
   const [handover, setHandover] = useState<{ rental: Rental; action: 'handover' | 'complete' } | null>(null);
   const requestedBooking = Number(searchParams.get('booking'));
@@ -134,6 +135,16 @@ export default function RentalsPage() {
       .catch(error => toast(error.message, true))
       .finally(() => setLoading(false));
   }, [toast]);
+
+  useEffect(() => {
+    const mql = window.matchMedia('(max-width: 750px)');
+    const updateIsMobile = () => setIsMobile(mql.matches);
+    updateIsMobile();
+    mql.addEventListener('change', updateIsMobile);
+    return () => mql.removeEventListener('change', updateIsMobile);
+  }, []);
+
+  const effectiveView: RentalView = isMobile ? 'grid' : view;
 
   useEffect(() => {
     let alive = true;
@@ -330,9 +341,9 @@ export default function RentalsPage() {
           <div className="rental-view-switch" role="group" aria-label={t('viewMode')}>
             <button
               type="button"
-              className={view === 'table' ? 'active' : ''}
+              className={effectiveView === 'table' ? 'active' : ''}
               onClick={() => switchView('table')}
-              aria-pressed={view === 'table'}
+              aria-pressed={effectiveView === 'table'}
               title={t('tableView')}
             >
               <List />
@@ -340,9 +351,9 @@ export default function RentalsPage() {
             </button>
             <button
               type="button"
-              className={view === 'grid' ? 'active' : ''}
+              className={effectiveView === 'grid' ? 'active' : ''}
               onClick={() => switchView('grid')}
-              aria-pressed={view === 'grid'}
+              aria-pressed={effectiveView === 'grid'}
               title={t('gridView')}
             >
               <LayoutGrid />
@@ -356,7 +367,7 @@ export default function RentalsPage() {
         <section className="panel rentals-loading"><Skeleton rows={6} /></section>
       ) : shown.length === 0 ? (
         <section className="panel"><Empty icon={CalendarDays} title={t('noRentals')} text={t('noRentalsText')} /></section>
-      ) : view === 'table' ? (
+      ) : effectiveView === 'table' ? (
         <section className="panel rentals-table enhanced-rentals-table">
           <div className="responsive-table">
             <table>
