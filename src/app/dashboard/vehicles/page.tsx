@@ -17,7 +17,7 @@ import { VehicleImageCarousel } from '@/components/vehicle-image-carousel';
 const blank = {
   make: '', model: '', trim: 'Standard', year: 2026, category: 'Luxury sedan', bodyType: 'Sedan',
   gearbox: 'Automatic', drivetrain: 'FWD', steeringType: 'Left-hand drive', fuel: 'Hybrid',
-  fuelLevel: 100, fuelPolicy: 'same_to_same', dailyKilometerAllowance: 250, excessKilometerRate: 0,
+  fuelLevel: 100, fuelConsumption: '', fuelPolicy: 'same_to_same', dailyKilometerAllowance: 250, excessKilometerRate: 0,
   seats: 5, color: '', licensePlate: '', vin: '', odometer: 0, location: 'SoMa, San Francisco',
   pickupLocations: [{ city: 'San Francisco', site: 'SoMa Mobility Hub' }],
   features: ['GPS', 'Apple CarPlay'], image: '', images: [], status: 'available',
@@ -323,8 +323,8 @@ function VehicleForm({ open, vehicle, onClose, onSaved }: { open: boolean; vehic
             <div><h3>{t('vehicleDetails')}</h3><p>{t('basicInformation')}</p></div>
           </div>
           <div className="form-grid form-grid-3">
-            {([['make', 'make'], ['model', 'model'], ['trim', 'trim'], ['year', 'year'], ['licensePlate', 'licensePlate'], ['vin', 'vin'], ['color', 'color'], ['odometer', 'odometer'], ['fuelLevel', 'fuelLevel']] as const).map(([key, label]) => (
-              <label key={key} className="form-label">{t(label)}<input type={['year', 'odometer', 'fuelLevel'].includes(key) ? 'number' : 'text'} value={form[key]} onChange={(e) => set(key, ['year', 'odometer', 'fuelLevel'].includes(key) ? Number(e.target.value) : e.target.value)} required /></label>
+            {([['make', 'make'], ['model', 'model'], ['trim', 'trim'], ['year', 'year'], ['licensePlate', 'licensePlate'], ['vin', 'vin'], ['color', 'color'], ['odometer', 'odometer'], ['fuelLevel', 'fuelLevel'], ['fuelConsumption', 'fuelConsumptionUnit']] as const).map(([key, label]) => (
+              <label key={key} className="form-label">{t(label)}<input type={['year', 'odometer', 'fuelLevel', 'fuelConsumption'].includes(key) ? 'number' : 'text'} step={key === 'fuelConsumption' ? '0.1' : undefined} value={form[key]} onChange={(e) => set(key, ['year', 'odometer', 'fuelLevel', 'fuelConsumption'].includes(key) ? e.target.value : e.target.value)} required={key !== 'fuelConsumption'} /></label>
             ))}
             <div className="span-2 form-grid-2">
               <label className="form-label">{t('category')}<select value={form.category} onChange={(e) => set('category', e.target.value)}>{['Luxury sedan', 'Executive', 'Premium SUV', 'Electric SUV', 'Sedan', 'Performance', 'SUV', 'Luxury SUV', 'Electric sedan'].map((value) => <option key={value} value={value}>{t(value)}</option>)}</select></label>

@@ -72,6 +72,7 @@ export function VehicleDetailContent({ data, variant = 'public', onRent, onBooki
   const specs: Spec[] = [
     { key: 'transmission', label: t('specTransmission'), value: t(v.gearbox), icon: 'gauge' },
     { key: 'fuel', label: t('specFuelType'), value: t(v.fuel), icon: 'fuel' },
+    { key: 'fuelConsumption', label: t('fuelConsumptionUnit'), value: v.fuelConsumption ? `${v.fuelConsumption} L/100km` : '—', icon: 'fuel' },
     { key: 'seats', label: t('specSeatsCount'), value: `${v.seats} ${t('seats')}`, icon: 'seats' },
     { key: 'mileage', label: t('specMileage'), value: `${dailyKm} ${t('kilometers')}/${t('day')}`, icon: 'mileage' },
     { key: 'drivetrain', label: t('specDrivetrain'), value: t(v.drivetrain || 'FWD'), icon: 'drivetrain' },

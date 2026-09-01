@@ -1,4 +1,4 @@
-import { and, desc, eq, ilike, or } from 'drizzle-orm';
+import { and, desc, eq, ilike, isNull, or } from 'drizzle-orm';
 import { getDb } from '@/db';
 import { companies, promotionVehicles, promotions, vehicleConditionLogs, vehicles } from '@/db/schema';
 import { getSession, requireUser } from '@/lib/auth';
@@ -44,7 +44,7 @@ export async function GET(request: Request) {
       .innerJoin(companies, eq(vehicles.companyId, companies.id))
       .where(and(...conditions)).orderBy(desc(vehicles.createdAt));
     const companyIds = [...new Set(rows.map((row: any) => row.vehicle.companyId))];
-    const promoRows = companyIds.length ? await db.select().from(promotions) : [];
+    const promoRows = companyIds.length ? await db.select().from(promotions).where(isNull(promotions.archivedAt)) : [];
     const links = companyIds.length ? await db.select().from(promotionVehicles) : [];
     const result = rows.map((row: any) => {
       const vehicle = row.vehicle;
@@ -97,6 +97,7 @@ export async function POST(request: Request) {
         steeringType: body.steeringType || 'Left-hand drive', fuel: body.fuel || 'Petrol',
         seats: number(body.seats || 5, 1), color: body.color, licensePlate: String(body.licensePlate).toUpperCase(),
         vin: String(body.vin || '').trim().toUpperCase(), odometer, fuelLevel: currentFuel, fuelPolicy: body.fuelPolicy || 'same_to_same',
+        fuelConsumption: body.fuelConsumption === undefined || body.fuelConsumption === null || body.fuelConsumption === '' ? null : number(body.fuelConsumption),
         dailyKilometerAllowance: mileagePolicy?.dailyKilometerAllowance ?? number(body.dailyKilometerAllowance ?? 250),
         excessKilometerRate: mileagePolicy?.excessKilometerRate ?? number(body.excessKilometerRate),
         insuranceCoverage: body.insuranceCoverage,

@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
 import { getDb } from '@/db';
 import { companies, insurancePackages, insurancePackageVehicles, promotionVehicles, promotions, rentals, users, vehicleConditionLogs, vehicles } from '@/db/schema';
 import { getSession, requireUser } from '@/lib/auth';
@@ -62,7 +62,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
     }).from(rentals).innerJoin(users, eq(rentals.renterId, users.id))
       .where(eq(rentals.vehicleId, row.id)).orderBy(desc(rentals.startsAt)) : [];
     const conditionLogs = companyAccess ? allConditionLogs.slice(0, 60) : [];
-    const promoRows = await db.select().from(promotions).where(eq(promotions.companyId, row.companyId));
+    const promoRows = await db.select().from(promotions).where(and(eq(promotions.companyId, row.companyId), isNull(promotions.archivedAt)));
     const links = await db.select().from(promotionVehicles).where(eq(promotionVehicles.vehicleId, row.id));
     const eligible = promoRows.filter((promo: any) => promotionState(promo) === 'live'
       && (promo.appliesTo === 'all' || links.some((link: any) => link.promotionId === promo.id)))
@@ -125,6 +125,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       const fuel = boundedFuel(body.fuelLevel);
       if (!Number.isFinite(fuel)) throw new Error('Fuel level must be between 0 and 100.');
       data.fuelLevel = fuel;
+    }
+    if (body.fuelConsumption !== undefined) {
+      const consumption = Number(body.fuelConsumption);
+      data.fuelConsumption = body.fuelConsumption === null || body.fuelConsumption === '' || !Number.isFinite(consumption) || consumption < 0
+        ? null
+        : consumption;
     }
     if (body.fuelPolicy !== undefined && !['same_to_same', 'full_to_full', 'prepaid'].includes(body.fuelPolicy)) throw new Error('Choose a valid fuel policy.');
     if (body.insuranceCoverage !== undefined && !['third_party', 'comprehensive'].includes(body.insuranceCoverage)) throw new Error('Choose a valid insurance coverage type.');
