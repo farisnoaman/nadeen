@@ -64,7 +64,7 @@ export default async function VehicleSegmentLayout({ children, params }: { child
   }
   return (
     <>
-      {jsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />}
+      {jsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g,'\\u003c') }} />}
       {children}
     </>
   );
