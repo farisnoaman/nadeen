@@ -69,7 +69,7 @@ export async function loadInvoice(rentalId: number, token?: string | null) {
       ? row.invoiceIssuedAt || row.startsAt
       : row.createdAt;
   return {
-    invoiceNumber: `FF-${new Date(row.createdAt).getFullYear()}-${String(row.id).padStart(5, '0')}`,
+    invoiceNumber: row.bookingNumber || `FF-${new Date(row.createdAt).getFullYear()}-${String(row.id).padStart(5, '0')}`,
     documentStage,
     documentType: rentalDocumentTitle(documentStage),
     documentDate,

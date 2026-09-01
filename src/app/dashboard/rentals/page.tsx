@@ -40,6 +40,7 @@ type RentalService = {
 
 type Rental = {
   id: number;
+  bookingNumber?: string;
   status: string;
   rateType: string;
   quantity: number;
@@ -171,7 +172,7 @@ export default function RentalsPage() {
     const query = search.trim().toLowerCase();
     return rows.filter(rental => (
       (tab === 'all' || rental.status === tab)
-      && `${rental.id} ${rental.make} ${rental.model} ${rental.customer} ${rental.companyName} ${rental.licensePlate} ${rental.pickupCity} ${rental.pickupLocation} ${rental.returnCity} ${rental.returnLocation} ${rental.bookingOdometer}`
+      && `${rental.id} ${rental.make} ${rental.model} ${rental.customer} ${rental.companyName} ${rental.licensePlate} ${rental.bookingNumber ?? `FF-${rental.id}`} ${rental.pickupCity} ${rental.pickupLocation} ${rental.returnCity} ${rental.returnLocation} ${rental.bookingOdometer}`
         .toLowerCase()
         .includes(query)
     ));
@@ -217,7 +218,7 @@ export default function RentalsPage() {
       t('vehicleRental'), t('premiumServices'), t('discounts'), t('total'), t('status'),
     ];
     const lines = shown.map(rental => [
-      `FF-${String(rental.id).padStart(4, '0')}`,
+      rental.bookingNumber ?? `FF-${String(rental.id).padStart(4, '0')}`,
       `${rental.make} ${rental.model} (${rental.licensePlate})`,
       partnerName(rental),
       new Date(rental.startsAt).toISOString(),
@@ -253,7 +254,7 @@ export default function RentalsPage() {
     const documentLabel = t(stage === 'quotation' ? 'proposal' : stage === 'paid' ? 'finalWaybill' : 'bill');
     return (
       <div className="pipeline-actions bill-actions">
-        <a href={billUrl(rental)} className="action-bill" aria-label={`${documentLabel} FF-${rental.id}`}>
+        <a href={billUrl(rental)} className="action-bill" aria-label={`${documentLabel} ${rental.bookingNumber ?? `FF-${rental.id}`}`}>
           <ReceiptText />
           <span>{documentLabel}</span>
         </a>
@@ -388,7 +389,7 @@ export default function RentalsPage() {
                   <tr key={rental.id}>
                     <td data-label={t('reservation')}>
                       <div className="rental-reference">
-                        <strong dir="ltr">#FF-{String(rental.id).padStart(4, '0')}</strong>
+                        <strong dir="ltr">#{rental.bookingNumber || `FF-${String(rental.id).padStart(4, "0")}`}</strong>
                         <small>{t('created')} {shortDate(rental.createdAt)}</small>
                       </div>
                     </td>

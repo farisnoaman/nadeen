@@ -7,6 +7,7 @@ import {
   availabilitySuggestion, findTurnaroundConflict, getBusyPeriods,
   humanAvailability, serializeBusyPeriod, TURNAROUND_MINUTES, TURNAROUND_MS,
 } from '@/lib/availability';
+import { assignBookingNumber } from '@/lib/booking-number';
 import { fail, ok } from '@/lib/http';
 import { protectionPackage } from '@/lib/insurance';
 import { findPickupLocation } from '@/lib/locations';
@@ -18,7 +19,7 @@ import { assertBookableCompany, assertRentalRequestCapacity, companyEntitlement 
 import { canonicalOdometer } from '@/lib/telemetry';
 
 const rentalSelect = {
-  id: rentals.id, vehicleId: rentals.vehicleId, renterId: rentals.renterId,
+  id: rentals.id, vehicleId: rentals.vehicleId, renterId: rentals.renterId, bookingNumber: rentals.bookingNumber,
   status: rentals.status, rateType: rentals.rateType, quantity: rentals.quantity,
   startsAt: rentals.startsAt, endsAt: rentals.endsAt, subtotal: rentals.subtotal,
   discount: rentals.discount,
@@ -269,8 +270,9 @@ export async function POST(request: Request) {
         throw new Error(`This vehicle was just reserved. Refresh availability; a ${TURNAROUND_MINUTES}-minute gap is required between rentals.`);
       }
       const loyalty = await loyaltyBookingTerms(tx, vehicle.companyId, user.id, subtotal, discount);
+      const bookingNumber = await assignBookingNumber(tx, vehicle.companyId);
       const [row] = await tx.insert(rentals).values({
-        vehicleId: vehicle.id, renterId: user.id, status: 'pending', rateType: type,
+        vehicleId: vehicle.id, renterId: user.id, status: 'pending', rateType: type, bookingNumber,
         quantity, startsAt, endsAt, subtotal, discount,
         currency: rentalCurrency, exchangeRate: rentalExchangeRate,
         loyaltyLevelId:loyalty.levelId, loyaltyLevelName:loyalty.levelName,
@@ -306,7 +308,7 @@ export async function POST(request: Request) {
       await tx.insert(notifications).values({
         companyId: vehicle.companyId,
         type: 'rental_created',
-        body: `${user.name} · ${vehicle.make} ${vehicle.model} · FF-${String(row.id).padStart(4, '0')}`,
+        body: `${user.name} · ${vehicle.make} ${vehicle.model} · ${bookingNumber ?? `FF-${row.id}`}`,
         href: '/dashboard/rentals',
         entityType: 'rental',
         entityId: row.id,

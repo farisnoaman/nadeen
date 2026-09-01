@@ -60,7 +60,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         await tx.insert(notifications).values({
           userId: rental.renterId,
           type: 'billing_updated',
-          body: `FF-${String(rental.id).padStart(4, '0')}`,
+          body: rental.bookingNumber || `FF-${String(rental.id).padStart(4, '0')}`,
           href: `/invoice/${rental.id}?token=${encodeURIComponent(rental.invoiceToken)}`,
           entityType: 'rental',
           entityId: rental.id,
@@ -178,7 +178,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         await tx.insert(notifications).values({
           userId:rental.renterId,
           type:'system',
-          body:`+${savedRental.loyaltyPointsEarned} loyalty points · FF-${String(rental.id).padStart(4, '0')}`,
+          body:`+${savedRental.loyaltyPointsEarned} loyalty points · ${rental.bookingNumber || `FF-${rental.id}`}`,
           href:'/dashboard',
           entityType:'loyalty_points',
           entityId:rental.id,
@@ -188,7 +188,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       await tx.insert(notifications).values({
         ...(user.role === 'company' ? { userId: rental.renterId } : { companyId: row.companyId }),
         type: 'rental_status',
-        body: `FF-${String(rental.id).padStart(4, '0')} · ${lifecycleEvent}`,
+        body: `${rental.bookingNumber || `FF-${rental.id}`} · ${lifecycleEvent}`,
         href: '/dashboard/rentals',
         entityType: 'rental',
         entityId: rental.id,

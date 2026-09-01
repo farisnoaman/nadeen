@@ -182,6 +182,11 @@ CREATE TABLE IF NOT EXISTS promotions (
 );
 ALTER TABLE promotions ADD COLUMN IF NOT EXISTS archived_at TIMESTAMPTZ;
 ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS fuel_consumption DOUBLE PRECISION;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS booking_code TEXT;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS booking_seq INTEGER NOT NULL DEFAULT 0;
+CREATE UNIQUE INDEX IF NOT EXISTS companies_booking_code_idx ON companies(booking_code) WHERE booking_code IS NOT NULL;
+ALTER TABLE rentals ADD COLUMN IF NOT EXISTS booking_number TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS rentals_booking_number_idx ON rentals(booking_number) WHERE booking_number IS NOT NULL;
 CREATE TABLE IF NOT EXISTS platform_settings (
   id INTEGER PRIMARY KEY DEFAULT 1, support_phones JSONB NOT NULL DEFAULT '[]'::jsonb,
   support_email TEXT, updated_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
@@ -435,7 +440,7 @@ CREATE TABLE IF NOT EXISTS saved_vehicles (
 CREATE INDEX IF NOT EXISTS saved_vehicles_vehicle_idx ON saved_vehicles(vehicle_id);
 `;
 
-type Store = { promise?: Promise<any>; db?: any; raw?: any; imagesReady?: Promise<void>; promoArchivedReady?: Promise<any>; platformSettingsReady?: Promise<any>; fuelConsumptionReady?: Promise<any> };
+type Store = { promise?: Promise<any>; db?: any; raw?: any; imagesReady?: Promise<void>; promoArchivedReady?: Promise<any>; platformSettingsReady?: Promise<any>; fuelConsumptionReady?: Promise<any>; bookingNumberReady?: Promise<any> };
 const globalStore = globalThis as typeof globalThis & { __fleetflowDb?: Store };
 const store = globalStore.__fleetflowDb ||= {};
 
@@ -522,6 +527,17 @@ export async function getDb() {
         : store.raw.exec(`ALTER TABLE promotions ADD COLUMN IF NOT EXISTS archived_at TIMESTAMPTZ`);
     }
     if (store.promoArchivedReady) await store.promoArchivedReady;
+    if (store.raw && !store.bookingNumberReady) {
+      const ddl = `ALTER TABLE companies ADD COLUMN IF NOT EXISTS booking_code TEXT;
+        ALTER TABLE companies ADD COLUMN IF NOT EXISTS booking_seq INTEGER NOT NULL DEFAULT 0;
+        CREATE UNIQUE INDEX IF NOT EXISTS companies_booking_code_idx ON companies(booking_code) WHERE booking_code IS NOT NULL;
+        ALTER TABLE rentals ADD COLUMN IF NOT EXISTS booking_number TEXT;
+        CREATE UNIQUE INDEX IF NOT EXISTS rentals_booking_number_idx ON rentals(booking_number) WHERE booking_number IS NOT NULL;`;
+      store.bookingNumberReady = process.env.DATABASE_URL
+        ? store.raw.unsafe(ddl)
+        : store.raw.exec(ddl);
+    }
+    if (store.bookingNumberReady) await store.bookingNumberReady;
     if (store.raw && !store.fuelConsumptionReady) {
       store.fuelConsumptionReady = process.env.DATABASE_URL
         ? store.raw.unsafe(`ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS fuel_consumption DOUBLE PRECISION`)

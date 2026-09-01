@@ -41,6 +41,8 @@ export const companies = pgTable('companies', {
   supportedCurrencies: jsonb('supported_currencies').$type<string[]>().notNull().default(['USD']),
   exchangeRates: jsonb('exchange_rates').$type<Record<string, number>>().notNull().default({}),
   whatsappNumbers: jsonb('whatsapp_numbers').$type<Array<{ label: string; phone: string }>>().notNull().default([]),
+  bookingCode: text('booking_code'),
+  bookingSeq: integer('booking_seq').notNull().default(0),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
@@ -340,6 +342,7 @@ export const rentals = pgTable('rentals', {
   loyaltyPointsEarned: integer('loyalty_points_earned').notNull().default(0),
   extrasSubtotal: doublePrecision('extras_subtotal').notNull().default(0),
   bookingOdometer: integer('booking_odometer').notNull().default(0),
+  bookingNumber: text('booking_number'),
   renterOdometerAcknowledged: boolean('renter_odometer_acknowledged').notNull().default(false),
   renterOdometerAcknowledgedAt: timestamp('renter_odometer_acknowledged_at', { withTimezone: true }),
   confirmedAt: timestamp('confirmed_at', { withTimezone: true }),
