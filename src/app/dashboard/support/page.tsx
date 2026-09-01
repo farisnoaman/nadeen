@@ -106,6 +106,8 @@ export default function SupportPage() {
   const [rentals, setRentals] = useState<RentalOption[]>([]);
   const [faqQuery, setFaqQuery] = useState('');
   const [mobileThreadOpen, setMobileThreadOpen] = useState(false);
+  const [supportPhones, setSupportPhones] = useState<{ label: string; phone: string }[]>([]);
+  const [supportEmail, setSupportEmail] = useState('support@fleetflow.app');
   const requestedConversation = searchParams.get('conversation');
 
   const dateLabel = (value?: string) => value ? new Intl.DateTimeFormat(lang === 'ar' ? 'ar' : 'en-US', {
@@ -133,6 +135,12 @@ export default function SupportPage() {
     refreshTickets(hasRequestedConversation ? requestedId : undefined)
       .catch(error => toast(error.message, true))
       .finally(() => setLoading(false));
+    api<{ supportPhones: { label: string; phone: string }[]; supportEmail: string }>('/platform-settings')
+      .then(data => {
+        setSupportPhones(data.supportPhones || []);
+        if (data.supportEmail) setSupportEmail(data.supportEmail);
+      })
+      .catch(() => { /* fall back to defaults */ });
   }, [requestedConversation]);
 
   useEffect(() => {
@@ -291,16 +299,18 @@ export default function SupportPage() {
             <div><strong>{t('supportInApp')}</strong><small>{t('supportInAppText')}</small></div>
             <em>{openCount} {t('supportActive')}</em>
           </article>
-          <a href="mailto:support@fleetflow.app">
+          <a href={`mailto:${supportEmail}`}>
             <span><Mail /></span>
-            <div><strong>support@fleetflow.app</strong><small>{t('supportEmailText')}</small></div>
+            <div><strong>{supportEmail}</strong><small>{t('supportEmailText')}</small></div>
             <ChevronRight />
           </a>
-          <a href="tel:+14155550140">
-            <span><Phone /></span>
-            <div><strong>+1 (415) 555-0140</strong><small>{t('supportUrgentLine')}</small></div>
-            <ChevronRight />
-          </a>
+          {supportPhones.map((entry, index) => (
+            <a key={`${entry.phone}-${index}`} href={`tel:${entry.phone.replace(/[^\d+]/g, '')}`}>
+              <span><Phone /></span>
+              <div><strong>{entry.label || entry.phone}</strong><small>{entry.label ? entry.phone : t('supportUrgentLine')}</small></div>
+              <ChevronRight />
+            </a>
+          ))}
         </div>
       </section>
 
