@@ -295,7 +295,7 @@ ALTER TABLE rentals ADD COLUMN IF NOT EXISTS kilometer_policy_id INTEGER REFEREN
 ALTER TABLE rentals ADD COLUMN IF NOT EXISTS kilometer_policy_name TEXT NOT NULL DEFAULT 'Vehicle mileage terms';
 ALTER TABLE rentals ADD COLUMN IF NOT EXISTS excess_distance_charge DOUBLE PRECISION NOT NULL DEFAULT 0;
 ALTER TABLE rentals ADD COLUMN IF NOT EXISTS invoice_token TEXT;
-UPDATE rentals SET invoice_token = 'legacy-' || id::text WHERE invoice_token IS NULL;
+UPDATE rentals SET invoice_token = gen_random_uuid()::text WHERE invoice_token IS NULL;
 ALTER TABLE rentals ALTER COLUMN invoice_token SET NOT NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS rentals_invoice_token_idx ON rentals(invoice_token);
 CREATE INDEX IF NOT EXISTS rentals_vehicle_idx ON rentals(vehicle_id);
@@ -492,12 +492,17 @@ async function initialize() {
   const [platformAdmin] = await db.select({ id:schema.users.id }).from(schema.users)
     .where(eq(schema.users.role, 'platform_admin')).limit(1);
   if (!platformAdmin) {
-    const passwordHash = await bcrypt.hash(process.env.PLATFORM_ADMIN_PASSWORD || 'demo1234', 10);
-    const [admin] = await db.insert(schema.users).values({
-      name:'FleetFlow Platform Admin', email:process.env.PLATFORM_ADMIN_EMAIL || 'admin@fleetflow.com',
-      passwordHash, role:'platform_admin', avatar:'PA',
-    }).onConflictDoNothing().returning();
-    if (admin) await db.insert(schema.userSettings).values({ userId:admin.id }).onConflictDoNothing();
+    const adminPassword = process.env.PLATFORM_ADMIN_PASSWORD || (process.env.NODE_ENV === 'production' ? '' : 'demo1234');
+    if (!adminPassword) {
+      console.warn('PLATFORM_ADMIN_PASSWORD is not set — skipping platform admin bootstrap. Set PLATFORM_ADMIN_EMAIL and PLATFORM_ADMIN_PASSWORD to create the admin account.');
+    } else {
+      const passwordHash = await bcrypt.hash(adminPassword, 10);
+      const [admin] = await db.insert(schema.users).values({
+        name:'FleetFlow Platform Admin', email:process.env.PLATFORM_ADMIN_EMAIL || 'admin@fleetflow.com',
+        passwordHash, role:'platform_admin', avatar:'PA',
+      }).onConflictDoNothing().returning();
+      if (admin) await db.insert(schema.userSettings).values({ userId:admin.id }).onConflictDoNothing();
+    }
   }
   store.db = db;
   return db;

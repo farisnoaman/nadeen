@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import { randomUUID } from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import { companies, insurancePackages, insurancePackageVehicles, kilometerPolicies, kilometerPolicyVehicles, loyaltyLevels, loyaltyPointLedger, loyaltyPrograms, maintenanceItems, maintenanceWorkOrders, notifications, premiumServices, promotionVehicles, promotions, rentals, rentalServices, subscriptionPlans, supportMessages, supportTickets, userSettings, users, vehicleConditionLogs, vehicles } from './schema';
 import { DEFAULT_MAINTENANCE_ITEMS } from '../lib/maintenance';
@@ -204,7 +205,7 @@ export async function seedDatabase(db: any) {
     const excessDistanceCharge = Math.round(excessKilometers * vehicle.excessKilometerRate * 100) / 100;
     return {
       ...row,
-      invoiceToken:`demo-invoice-${String(index+1).padStart(3,'0')}`,
+      invoiceToken:randomUUID(),
       extrasSubtotal:0,
       bookingOdometer: hasPickup ? Math.max(0, vehicle.odometer - pickupDistance) : vehicle.odometer,
       renterOdometerAcknowledged:hasPickup,
