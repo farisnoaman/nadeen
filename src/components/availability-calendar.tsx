@@ -43,15 +43,21 @@ export function AvailabilityCalendar({ busyPeriods, startDate, endDate, onChange
   const stateFor = (date: Date) => {
     const dayStart = date.getTime();
     const dayEnd = dayStart + dayMs;
-    const reserved = busyPeriods.some((period) =>
-      dayStart < new Date(period.endsAt).getTime() && dayEnd > new Date(period.startsAt).getTime()
-    );
-    const turnaround = !reserved && busyPeriods.some((period) => {
+    // Interval coverage: a day is only fully reserved when busy intervals (incl. turnaround
+    // buffer) cover it entirely. Partial days stay selectable — exact times are validated
+    // against busy periods at booking level.
+    let busyMs = 0;
+    for (const period of busyPeriods) {
       const from = new Date(period.blockedFrom || period.startsAt).getTime();
       const until = new Date(period.blockedUntil || period.endsAt).getTime();
-      return dayStart < until && dayEnd > from;
-    });
-    return { reserved, turnaround, past: dayStart < today.getTime() };
+      busyMs += Math.max(0, Math.min(dayEnd, until) - Math.max(dayStart, from));
+    }
+    const coverage = busyMs / dayMs;
+    return {
+      reserved: coverage >= 1,
+      partial: coverage > 0 && coverage < 1,
+      past: dayStart < today.getTime(),
+    };
   };
 
   const select = (date: Date) => {
@@ -90,9 +96,9 @@ export function AvailabilityCalendar({ busyPeriods, startDate, endDate, onChange
         const selected = key === startDate || key === endDate;
         const inRange = !!startDate && !!endDate && key > startDate && key < endDate;
         return <button type="button" key={key} disabled={state.past || state.reserved}
-          className={`${selected ? 'selected' : ''} ${inRange ? 'in-range' : ''} ${state.reserved ? 'reserved' : ''} ${state.turnaround ? 'turnaround' : ''}`}
-          onClick={() => select(date)} aria-label={key}>
-          <span>{date.getDate()}</span>{state.turnaround && <i />}
+          className={`${selected ? 'selected' : ''} ${inRange ? 'in-range' : ''} ${state.reserved ? 'reserved' : ''} ${state.partial ? 'partial' : ''}`}
+          onClick={() => select(date)} aria-label={key} title={state.partial ? t('partiallyBooked') : undefined}>
+          <span>{date.getDate()}</span>{state.partial && <i />}
         </button>;
       })}</div>
     </section>;
@@ -108,7 +114,7 @@ export function AvailabilityCalendar({ busyPeriods, startDate, endDate, onChange
       <span><i className="open" />{t('open')}</span>
       <span><i className="selected" />{t('selected')}</span>
       <span><i className="reserved" />{t('reserved')}</span>
-      <span><i className="buffer" /><Clock3 />{t('turnaround')}</span>
+      <span><i className="buffer" /><Clock3 />{t('partiallyBooked')}</span>
     </footer>
   </div>;
 }

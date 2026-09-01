@@ -65,6 +65,28 @@ export function findTurnaroundConflict(periods: BusyPeriod[], startsAt: Date, en
   );
 }
 
+/**
+ * Earliest start >= requestedStart where [start, start + durationMs) fits in a free gap.
+ * Works with both server BusyPeriod objects and serialized (ISO string) periods.
+ */
+export function nextAvailableSlot(
+  periods: { blockedFrom: Date | string; blockedUntil: Date | string }[],
+  requestedStart: Date,
+  durationMs: number,
+): Date {
+  const gaps = periods
+    .map((period) => ({ from: new Date(period.blockedFrom).getTime(), until: new Date(period.blockedUntil).getTime() }))
+    .filter((period) => period.until > period.from)
+    .sort((a, b) => a.from - b.from);
+  let candidate = requestedStart.getTime();
+  for (let guard = 0; guard < gaps.length + 2; guard++) {
+    const hit = gaps.find((gap) => candidate < gap.until && candidate + durationMs > gap.from);
+    if (!hit) break;
+    candidate = hit.until;
+  }
+  return new Date(candidate);
+}
+
 export function availabilitySuggestion(periods: BusyPeriod[], startsAt: Date) {
   const startMs = startsAt.getTime();
   const containing = periods.find((period) =>

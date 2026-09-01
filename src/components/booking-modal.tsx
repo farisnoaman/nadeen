@@ -3,6 +3,8 @@ import { AlertTriangle, ArrowRight, Award, Baby, BriefcaseBusiness, CalendarDays
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AvailabilityCalendar } from './availability-calendar';
+import { DayTimeline } from './day-timeline';
+import { nextAvailableSlot } from '@/lib/availability';
 import { Modal, StatusBadge, useToast } from './ui';
 import { VehicleImageCarousel } from './vehicle-image-carousel';
 import { api } from '@/lib/client-api';
@@ -109,6 +111,26 @@ export function BookingModal({ vehicle, onClose }: { vehicle: any; onClose: () =
     if (difference > 0 && difference <= 3_660_000) return availability.availableUntil;
     return calculatedEnd;
   }, [availability, calculatedEnd]);
+  // Precise hourly overlap against busy windows (each includes the 1h turnaround buffer).
+  const busyWindows = useMemo(() => (details?.busyPeriods || []).map((period: any) => ({
+    startsAt: new Date(period.startsAt),
+    endsAt: new Date(period.endsAt),
+    blockedFrom: new Date(period.blockedFrom || period.startsAt),
+    blockedUntil: new Date(period.blockedUntil || period.endsAt),
+  })), [details?.busyPeriods]);
+  const overlapConflict = useMemo(() => busyWindows.find((window: any) =>
+    startsAt.getTime() < window.blockedUntil.getTime() && returnAt.getTime() > window.blockedFrom.getTime()
+  ), [busyWindows, startsAt, returnAt]);
+  const requestedDuration = Math.max(3_600_000, returnAt.getTime() - startsAt.getTime());
+  const suggestedSlot = useMemo(() => overlapConflict
+    ? nextAvailableSlot(busyWindows, startsAt, requestedDuration)
+    : null, [busyWindows, overlapConflict, startsAt, requestedDuration]);
+  const applySuggestedSlot = () => {
+    if (!suggestedSlot) return;
+    setStartDate(keyOf(suggestedSlot));
+    setEndDate(keyOf(new Date(suggestedSlot.getTime() + requestedDuration)));
+    setPickupTime(`${String(suggestedSlot.getHours()).padStart(2, '0')}:${String(suggestedSlot.getMinutes()).padStart(2, '0')}`);
+  };
   const subtotal = rates[type] * quantity;
   const rentalDays = Math.max(1, Math.ceil((returnAt.getTime() - startsAt.getTime()) / dayMs));
   const selectedServices = serviceCatalog.filter(service => serviceDays[service.id] > 0).map(service => ({
@@ -249,9 +271,10 @@ export function BookingModal({ vehicle, onClose }: { vehicle: any; onClose: () =
         {calendarOpen && <>
           <div className="calendar-step-hint" role="status"><CalendarDays /><span>{endDate ? t('calendarHintPickup') : t('calendarHintReturn')}</span><i /></div>
           <AvailabilityCalendar busyPeriods={details?.busyPeriods || []} startDate={startDate} endDate={endDate} onChange={onRangeChange} onInvalid={(message) => toast(message, true)} />
+          <DayTimeline date={startDate} startISO={startsAt.toISOString()} endISO={returnAt.toISOString()} periods={busyWindows} onPick={(time) => setPickupTime(time)} />
         </>}
         <div className="form-grid compact-fields"><label>{t('pickupTime')}<input type="time" value={pickupTime} onChange={event => setPickupTime(event.target.value)} /></label><label>{t('quantity')}<input type="number" min="1" value={quantity} onChange={event => changeQuantity(Number(event.target.value))} /></label></div>
-        {availability?.unavailable ? <div className="availability-warning danger"><AlertTriangle /><div><strong>{t('unavailableTime')}</strong><span>{t('nextReady')} {dateTime(availability.nextAvailableAt!)}</span></div></div> : availability?.availableUntil ? <div className={`availability-warning ${requestedConflict ? 'danger' : ''}`}><Clock3 /><div><strong>{availability.days} {t('calendarDaysOpen')}</strong><span>{t('mustReturnBy')} {dateTime(availability.availableUntil)} {t('serviceWindow')}</span></div></div> : <div className="availability-warning success"><CheckCircle2 /><div><strong>{t('windowOpen')}</strong><span>{t('noLaterReservation')}</span></div></div>}
+        {overlapConflict ? <div className="availability-warning danger overlap-slot"><AlertTriangle /><div><strong>{t('vehicleBusyBetween').replace('%s', dateTime(overlapConflict.startsAt)).replace('%s2', dateTime(overlapConflict.blockedUntil))}</strong>{suggestedSlot && <button type="button" className="slot-suggest" onClick={applySuggestedSlot}>{t('adjustToSlot').replace('%s', dateTime(suggestedSlot))}</button>}</div></div> : availability?.unavailable ? <div className="availability-warning danger"><AlertTriangle /><div><strong>{t('unavailableTime')}</strong><span>{t('nextReady')} {dateTime(availability.nextAvailableAt!)}</span></div></div> : availability?.availableUntil ?<div className={`availability-warning ${requestedConflict ? 'danger' : ''}`}><Clock3 /><div><strong>{availability.days} {t('calendarDaysOpen')}</strong><span>{t('mustReturnBy')} {dateTime(availability.availableUntil)} {t('serviceWindow')}</span></div></div> : <div className="availability-warning success"><CheckCircle2 /><div><strong>{t('windowOpen')}</strong><span>{t('noLaterReservation')}</span></div></div>}
         <div className="return-box"><Clock3 /><span>{t('returnTime')}<strong>{dateTime(returnAt)}</strong>{returnAt.getTime() !== calculatedEnd.getTime() && <small>{t('adjustedTurnaround')}</small>}</span></div>
         <div className="booking-contract-inputs">
           <label className="span-2">{t('pickupSite')}<div className="telemetry-input"><MapPin /><select required value={pickupKey} onChange={event => setPickupKey(event.target.value)}>{pickupLocations.map((location:any) => <option key={`${location.city}-${location.site}`} value={`${location.city}\u0000${location.site}`}>{location.city} — {location.site}</option>)}</select></div><small>{t('pickupSiteHint')}</small></label>
