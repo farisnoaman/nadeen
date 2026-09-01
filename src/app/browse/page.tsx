@@ -155,7 +155,7 @@ export default function BrowsePage() {
     </div><button type="button" className="btn primary sheet-apply" onClick={() => setFiltersOpen(false)}>{t('showResults')} ({shown.length})</button></section></>}
     <div className="filter-results"><span>{shown.length} {t('vehiclesFound')}</span>{activeFilters > 0 && <button onClick={clearAll}>{t('clearAll')}</button>}</div>
     {loading ? <Skeleton cards={6}/> : shown.length === 0 ? <Empty icon={CarFront} title={t('noCars')} text={t('tryDifferentFilters')} action={clearAll} label={t('clearFilters')}/> : <div className="vehicle-grid browse-grid">{shown.map(vehicle => (
-      <article className="vehicle-card marketplace-card" key={vehicle.id} onClick={() => router.push(`/browse/${vehicle.id}`)}>
+      <article className="vehicle-card marketplace-card" key={vehicle.id} role="link" tabIndex={0} aria-label={`${vehicle.make} ${vehicle.model} — ${t('viewDetails')}`} onClick={() => router.push(`/browse/${vehicle.id}`)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); router.push(`/browse/${vehicle.id}`); } }}>
 
         <div className="vehicle-photo">
           <div style={{ position: 'relative', zIndex: 50 }}>

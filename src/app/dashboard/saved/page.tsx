@@ -64,7 +64,7 @@ export default function SavedVehiclesPage() {
     ) : (
       <div className="vehicle-grid browse-grid">
         {vehicles.map((vehicle) => (
-          <article className="vehicle-card marketplace-card" key={vehicle.id} onClick={() => router.push(`/dashboard/browse/${vehicle.id}`)}>
+          <article className="vehicle-card marketplace-card" key={vehicle.id} role="link" tabIndex={0} aria-label={`${vehicle.make} ${vehicle.model} — ${t('viewDetails')}`} onClick={() => router.push(`/dashboard/browse/${vehicle.id}`)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); router.push(`/dashboard/browse/${vehicle.id}`); } }}>
             <div className="vehicle-photo">
               <VehicleImageCarousel image={vehicle.image} images={vehicle.images} variant="card" alt={`${vehicle.make} ${vehicle.model}`} />
               <button type="button" className={`save-car${favorites.has(vehicle.id) ? ' active' : ''}`} aria-pressed={favorites.has(vehicle.id)} aria-label={t('removeFromSaved')} onClick={(e) => toggleFavorite(vehicle.id, e)}>{favorites.has(vehicle.id) ? <Heart fill="currentColor" /> : <Heart />}</button>
