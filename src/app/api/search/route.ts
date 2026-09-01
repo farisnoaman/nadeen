@@ -140,7 +140,12 @@ export async function GET(request: Request) {
     const companyId = user.companyId || -1;
     const vehicleAccess = user.role === 'company'
       ? eq(vehicles.companyId, companyId)
-      : eq(vehicles.status, 'available');
+      : and(
+          eq(vehicles.status, 'available'),
+          eq(companies.verificationStatus, 'verified'),
+          eq(companies.subscriptionStatus, 'active'),
+          eq(companies.operationalStatus, 'active'),
+        );
     const rentalAccess = user.role === 'company'
       ? eq(vehicles.companyId, companyId)
       : eq(rentals.renterId, user.id);

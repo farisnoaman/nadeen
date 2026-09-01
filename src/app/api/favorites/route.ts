@@ -16,7 +16,13 @@ export async function GET() {
       .from(savedVehicles)
       .innerJoin(vehicles, eq(savedVehicles.vehicleId, vehicles.id))
       .innerJoin(companies, eq(vehicles.companyId, companies.id))
-      .where(eq(savedVehicles.userId, user.id))
+      .where(and(
+        eq(savedVehicles.userId, user.id),
+        eq(vehicles.status, 'available'),
+        eq(companies.verificationStatus, 'verified'),
+        eq(companies.subscriptionStatus, 'active'),
+        eq(companies.operationalStatus, 'active'),
+      ))
       .orderBy(desc(savedVehicles.createdAt));
     const companyIds = [...new Set(rows.map((row: any) => row.vehicle.companyId))];
     const promoRows = companyIds.length ? await db.select().from(promotions).where(isNull(promotions.archivedAt)) : [];
@@ -48,6 +54,18 @@ export async function POST(request: Request) {
     const vehicleId = Number(body.vehicleId);
     if (!Number.isInteger(vehicleId)) throw new Error('Choose a valid vehicle.');
     const db = await getDb();
+    const [vehicle] = await db.select({
+      status: vehicles.status,
+      verificationStatus: companies.verificationStatus,
+      subscriptionStatus: companies.subscriptionStatus,
+      operationalStatus: companies.operationalStatus,
+    }).from(vehicles)
+      .innerJoin(companies, eq(vehicles.companyId, companies.id))
+      .where(eq(vehicles.id, vehicleId)).limit(1);
+    if (!vehicle || vehicle.status !== 'available' || vehicle.verificationStatus !== 'verified'
+      || vehicle.subscriptionStatus !== 'active' || vehicle.operationalStatus !== 'active') {
+      throw new Error('This vehicle is not available to save.');
+    }
     await db.insert(savedVehicles).values({ userId: user.id, vehicleId }).onConflictDoNothing();
     return ok({ saved: true, vehicleId }, 201);
   } catch (error) {
