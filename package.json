@@ -29,6 +29,7 @@
     "react": "latest",
     "react-dom": "latest",
     "recharts": "latest",
+    "sonner": "^2.0.8",
     "zod": "latest"
   },
   "devDependencies": {

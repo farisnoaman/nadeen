@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { AvailabilityCalendar } from './availability-calendar';
 import { DayTimeline } from './day-timeline';
 import { nextAvailableSlot } from '@/lib/availability';
+import { toast as sonnerToast } from 'sonner';
 import { Modal, StatusBadge, useToast } from './ui';
 import { VehicleImageCarousel } from './vehicle-image-carousel';
 import { api } from '@/lib/client-api';
@@ -228,6 +229,7 @@ export function BookingModal({ vehicle, onClose }: { vehicle: any; onClose: () =
     if (!endDate) return toast(t('chooseRange'), true);
     if (requestedConflict) return toast(t('rangeReserved'), true);
     setBusy(true); setConflict(null);
+    const toastId = sonnerToast.loading(t('bookingConfirming'));
     try {
       await api('/rentals', { method: 'POST', body: JSON.stringify({
         vehicleId: vehicle.id, rateType: type, quantity,
@@ -240,11 +242,11 @@ export function BookingModal({ vehicle, onClose }: { vehicle: any; onClose: () =
         returnCity, returnLocation,
         services: selectedServices.map(service => ({ serviceId: service.id, days: service.days })),
       }) });
-      toast(t('bookingSent'));
+      sonnerToast.success(t('bookingSent'), { id: toastId });
       onClose(); router.push('/dashboard/rentals');
     } catch (error: any) {
       setConflict(error);
-      toast(error.message, true);
+      sonnerToast.error(error.message || t('bookingFailed'), { id: toastId });
     } finally { setBusy(false); }
   };
 
