@@ -12,6 +12,7 @@ import {
   KeyRound,
   Languages,
   LockKeyhole,
+  Headphones,
   Mail,
   MapPin,
   MessageCircle,
@@ -34,7 +35,7 @@ import { AppTheme, useAppTheme } from '@/lib/theme';
 import { SUPPORTED_CURRENCIES, CURRENCY_META, formatMoney } from '@/lib/currencies';
 import type { CurrencyCode } from '@/lib/currencies';
 
-type SettingsSection = 'profile' | 'workspace' | 'loyalty' | 'notifications' | 'appearance' | 'security';
+type SettingsSection = 'profile' | 'workspace' | 'loyalty' | 'platform' | 'notifications' | 'appearance' | 'security';
 
 type Profile = {
   id: number;
@@ -107,6 +108,9 @@ export default function SettingsPage() {
   const [savingCurrency, setSavingCurrency] = useState(false);
   type WhatsAppEntry = { label: string; phone: string };
   const [whatsappNumbers, setWhatsappNumbers] = useState<WhatsAppEntry[]>([]);
+  const [supportPhones, setSupportPhones] = useState<{ label: string; phone: string }[]>([]);
+  const [supportEmail, setSupportEmail] = useState('');
+  const [savingPlatform, setSavingPlatform] = useState(false);
 
   useEffect(() => {
     api<{ profile: Profile; preferences: Preferences; loyalty:LoyaltySettings|null; currency:CurrencySettings[]|null; whatsappNumbers?: WhatsAppEntry[] }>('/settings')
@@ -123,17 +127,48 @@ export default function SettingsPage() {
         setCurrency(Array.isArray(data.currency) && data.currency[0]
           ? data.currency[0]
           : { baseCurrency: 'USD', supportedCurrencies: ['USD'], exchangeRates: {} });
-        setWhatsappNumbers(data.whatsappNumbers || []);
+        setWhatsappNumbers((data.whatsappNumbers || []).map((w: any) => ({ label: String(w?.label ?? ''), phone: String(w?.phone ?? '') })));
       })
       .catch(error => toast(error.message, true))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (profile?.role !== 'platform_admin') return;
+    api<{ supportPhones: { label: string; phone: string }[]; supportEmail: string }>('/platform-settings')
+      .then(data => {
+        setSupportPhones((data.supportPhones || []).map((p: any) => ({ label: String(p?.label ?? ''), phone: String(p?.phone ?? '') })));
+        setSupportEmail(data.supportEmail || '');
+      })
+      .catch(() => { /* defaults stay */ });
+  }, [profile?.role]);
+
+  const savePlatform = async (event: FormEvent) => {
+    event.preventDefault();
+    setSavingPlatform(true);
+    try {
+      const data = await api<{ supportPhones: { label: string; phone: string }[]; supportEmail: string }>('/platform-settings', {
+        method: 'PATCH',
+        body: JSON.stringify({ supportPhones, supportEmail }),
+      });
+      setSupportPhones((data.supportPhones || []).map((p: any) => ({ label: String(p?.label ?? ''), phone: String(p?.phone ?? '') })));
+      setSupportEmail(data.supportEmail || '');
+      toast(t('saved'));
+    } catch (error: any) {
+      toast(error.message, true);
+    } finally {
+      setSavingPlatform(false);
+    }
+  };
 
   const sections = useMemo(() => [
     { id: 'profile' as const, icon: UserRound, label: t('settingsProfile'), text: t('settingsProfileText') },
     ...(profile?.role === 'company' ? [
       { id: 'workspace' as const, icon: Building2, label: t('settingsWorkspace'), text: t('settingsWorkspaceText') },
       { id: 'loyalty' as const, icon: Award, label: t('settingsLoyalty'), text: t('settingsLoyaltyText') },
+    ] : []),
+    ...(profile?.role === 'platform_admin' ? [
+      { id: 'platform' as const, icon: Headphones, label: t('platformSupportSection'), text: t('platformSupportSectionText') },
     ] : []),
     { id: 'notifications' as const, icon: BellRing, label: t('settingsNotifications'), text: t('settingsNotificationsText') },
     { id: 'appearance' as const, icon: Palette, label: t('settingsAppearance'), text: t('settingsAppearanceText') },
@@ -431,6 +466,70 @@ export default function SettingsPage() {
             </>
           )}
 
+          {section === 'platform' && profile.role === 'platform_admin' && (
+            <form className="settings-section-form platform-support-form" onSubmit={savePlatform}>
+              <div className="settings-workspace-note"><Headphones /><span><strong>{t('platformSupportSection')}</strong><small>{t('platformSupportSectionText')}</small></span></div>
+              <section className="support-contacts-editor">
+                <header>
+                  <div>
+                    <label>{t('supportNumbers')}</label>
+                    <p className="support-contacts-hint">{t('supportNumbersHint')}</p>
+                  </div>
+                  {supportPhones.length < 10 && (
+                    <button type="button" className="btn secondary" onClick={() => setSupportPhones([...supportPhones, { label: '', phone: '' }])}>
+                      <Plus /> {t('addSupportNumber')}
+                    </button>
+                  )}
+                </header>
+                {supportPhones.length === 0 ? (
+                  <div className="support-contacts-empty"><Phone /><span>{t('supportNumbersEmpty')}</span></div>
+                ) : (
+                  <div className="support-contacts-list">
+                    {supportPhones.map((phone, index) => (
+                      <div className="support-contact-row" key={index}>
+                        <span><Phone /></span>
+                        <div className="support-contact-fields">
+                          <input
+                            type="text"
+                            placeholder={t('supportLabelPlaceholder')}
+                            value={phone.label}
+                            onChange={e => {
+                              const next = [...supportPhones];
+                              next[index] = { ...next[index], label: e.target.value };
+                              setSupportPhones(next);
+                            }}
+                          />
+                          <input
+                            type="tel"
+                            placeholder="+966501234567"
+                            value={phone.phone}
+                            onChange={e => {
+                              const next = [...supportPhones];
+                              next[index] = { ...next[index], phone: e.target.value };
+                              setSupportPhones(next);
+                            }}
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          className="whatsapp-remove-btn"
+                          onClick={() => setSupportPhones(supportPhones.filter((_, i) => i !== index))}
+                          aria-label={t('remove')}
+                        >
+                          <X />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+              <label className="platform-email-field">
+                <span>{t('supportEmailLabel')}</span>
+                <input type="email" value={supportEmail} onChange={e => setSupportEmail(e.target.value)} placeholder="support@fleetflow.app" />
+              </label>
+              <SettingsActions saving={savingPlatform} label={t('settingsSavePlatform')} t={t} />
+            </form>
+          )}
           {section === 'loyalty' && profile.role === 'company' && loyalty && (
             <div className="settings-section-form loyalty-settings-form">
               <SettingsHeader icon={Award} title={t('settingsLoyalty')} text={t('settingsLoyaltyDescription')} />
