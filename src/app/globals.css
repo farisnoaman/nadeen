@@ -929,3 +929,28 @@ html[lang="en"]{--ff-type-caption:clamp(10px,calc(9px + .12vw),11.5px);--ff-type
 .browse-location>label small,.browse-location .browse-sort small{font-size:13px;font-weight:800;color:var(--text);line-height:1.2;white-space:nowrap}
 .browse-location .cs-display-text{font-size:11px;font-weight:700;color:var(--muted)}
 .browse-location .browse-sort select{font-size:11px!important;font-weight:700;color:var(--muted);min-height:36px;width:100%}
+
+/* Invoice total plate — readable in every theme */
+.invoice-total-final{box-shadow:0 12px 28px rgba(53,102,87,.22)}
+.dark .invoice-total-final{color:#101815;box-shadow:0 12px 26px rgba(0,0,0,.4)}
+.dark .invoice-total-final>span{color:color-mix(in srgb,#101815 72%,transparent)}
+.dark .invoice-total-final>strong{color:#101815}
+.dark .invoice-total>div strong{color:var(--text)}
+/* Signature + stage badges keep contrast in dark */
+.dark .invoice-signature.pending>svg{color:var(--green-2)}
+
+/* PDF export (html2canvas cannot parse color-mix/color() values) — static equivalents */
+.invoice-sheet.pdf-exporting .document-stage-quotation{border-color:#e2c089;background:#f7ecd4;color:#9a651b}
+.invoice-sheet.pdf-exporting .document-stage-issued{border-color:#a9c8d8;background:#e3eef4;color:#376e88}
+.invoice-sheet.pdf-exporting .document-stage-paid{border-color:#bcd3ca;background:#e5eee9;color:#356657}
+.invoice-sheet.pdf-exporting .invoice-signature.pending>em{background:#f7ecd4;color:#9a651b}
+.invoice-sheet.pdf-exporting .invoice-vehicle-readings article.verified{border-color:#bcd3ca;background:#f0f5f1}
+.invoice-sheet.pdf-exporting .invoice-total-final>span{color:rgba(255,255,255,.85)!important}
+.invoice-sheet.pdf-exporting .invoice-total-final{background:#356657!important;color:#ffffff!important}
+.invoice-sheet.pdf-exporting .invoice-total-final>strong{color:#ffffff!important}
+
+/* Total amount must be light on the olive plate — beats legacy .invoice-total>div:last-child strong (0,2,2) */
+.invoice-sheet .invoice-total .invoice-total-final>span{color:rgba(255,255,255,.85)}
+.invoice-sheet .invoice-total .invoice-total-final>strong{color:#ffffff;font-size:24px;letter-spacing:-.01em}
+.dark .invoice-sheet .invoice-total .invoice-total-final>span{color:rgba(16,24,21,.72)}
+.dark .invoice-sheet .invoice-total .invoice-total-final>strong{color:#101815}
