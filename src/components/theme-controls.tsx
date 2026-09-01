@@ -44,7 +44,7 @@ export function LanguageToggle() {
     }
   };
   return (
-    <button type="button" className="lang-toggle" onClick={changeLanguage} aria-label={t('language')} title={t('language')}>
+    <button type="button" className="lang-toggle" onClick={changeLanguage} aria-label={`${t('language')}: ${lang === 'en' ? 'ع' : 'EN'}`} title={t('language')}>
       <Languages size={16} /><span>{lang === 'en' ? 'ع' : 'EN'}</span>
     </button>
   );
@@ -142,7 +142,7 @@ export function CurrencyToggle({ currencies }: { currencies?: string[] }) {
         type="button"
         className={`currency-dropdown-trigger ${open ? 'open' : ''}`}
         onClick={handleOpen}
-        aria-label={t('displayCurrency')}
+        aria-label={`${t('displayCurrency')}: ${value}`}
         aria-expanded={open}
       >
         <span className="currency-dropdown-symbol">{symbol}</span>
