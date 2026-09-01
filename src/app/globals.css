@@ -954,3 +954,13 @@ html[lang="en"]{--ff-type-caption:clamp(10px,calc(9px + .12vw),11.5px);--ff-type
 .invoice-sheet .invoice-total .invoice-total-final>strong{color:#ffffff;font-size:24px;letter-spacing:-.01em}
 .dark .invoice-sheet .invoice-total .invoice-total-final>span{color:rgba(16,24,21,.72)}
 .dark .invoice-sheet .invoice-total .invoice-total-final>strong{color:#101815}
+
+/* Accessibility: skip link, keyboard focus, reduced motion */
+.skip-link{position:fixed;top:-48px;inset-inline-start:12px;z-index:200;min-height:40px;padding:0 14px;border-radius:9px;background:var(--green);color:#fff;font-size:13px;font-weight:800;display:inline-flex;align-items:center;transition:top .15s}
+.skip-link:focus-visible{top:10px}
+.dark .skip-link{color:#101815}
+:focus-visible{outline:2px solid var(--green);outline-offset:2px;border-radius:4px}
+.dark :focus-visible{outline-color:var(--green-2)}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+}

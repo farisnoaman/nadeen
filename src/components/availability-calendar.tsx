@@ -97,7 +97,7 @@ export function AvailabilityCalendar({ busyPeriods, startDate, endDate, onChange
         const inRange = !!startDate && !!endDate && key > startDate && key < endDate;
         return <button type="button" key={key} disabled={state.past || state.reserved}
           className={`${selected ? 'selected' : ''} ${inRange ? 'in-range' : ''} ${state.reserved ? 'reserved' : ''} ${state.partial ? 'partial' : ''}`}
-          onClick={() => select(date)} aria-label={key} title={state.partial ? t('partiallyBooked') : undefined}>
+          onClick={() => select(date)} aria-label={new Intl.DateTimeFormat(lang === 'ar' ? 'ar' : 'en-US', { weekday: 'long', month: 'long', day: 'numeric' }).format(date) + (state.partial ? ` — ${t('partiallyBooked')}` : '')} title={state.partial ? t('partiallyBooked') : undefined}>
           <span>{date.getDate()}</span>{state.partial && <i />}
         </button>;
       })}</div>
