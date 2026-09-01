@@ -4,6 +4,9 @@ import { eq } from 'drizzle-orm';
 import { getDb } from '@/db';
 import { AccountRole, companies, CompanyVerificationStatus, users } from '@/db/schema';
 
+if (process.env.NODE_ENV === 'production' && (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'replace-with-a-long-random-secret')) {
+  throw new Error('JWT_SECRET must be set to a strong random value in production.');
+}
 const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'fleetflow-local-development-secret-change-in-production');
 const COOKIE = 'ff_session';
 
@@ -18,8 +21,7 @@ function sessionCookieOptions(request?: Request) {
   const secure = process.env.NODE_ENV === 'production' || origin.startsWith('https://') || forwardedProto === 'https';
   return {
     httpOnly: true, path: '/', secure,
-    sameSite: secure ? 'none' as const : 'lax' as const,
-    partitioned: secure,
+    sameSite: 'lax' as const,
   };
 }
 

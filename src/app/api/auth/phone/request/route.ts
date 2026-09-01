@@ -26,7 +26,8 @@ export async function POST(request: Request) {
       phone, codeHash, expiresAt: new Date(Date.now() + ttlSeconds * 1000),
     });
     const delivered = await sendWhatsAppVerification(phone, code);
-    const localDemo = !delivered && !process.env.DATABASE_URL;
+    const demoModeEnabled = ['1', 'true'].includes(String(process.env.OTP_DEMO_MODE || '').toLowerCase());
+    const localDemo = !delivered && (demoModeEnabled || (process.env.NODE_ENV !== 'production' && !process.env.DATABASE_URL));
     if (!delivered && !localDemo) throw new Error('WhatsApp sign-in is not configured. Contact the platform administrator.');
     return ok({ sent: true, phone, expiresInSeconds: ttlSeconds, ...(localDemo ? { demoCode: code } : {}) });
   } catch (error) {
