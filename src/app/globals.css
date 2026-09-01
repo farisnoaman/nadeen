@@ -361,8 +361,6 @@ html[lang="en"]{--ff-type-caption:clamp(10px,calc(9px + .12vw),11.5px);--ff-type
 .phone-row .phone-country:focus{border-color:var(--green);box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 12%,transparent)}
 .phone-row .phone-country:disabled{opacity:.58;cursor:not-allowed}
 .phone-row input{flex:1;min-width:0}
-.demo-code{background:var(--green-soft);color:var(--green);border:1px dashed color-mix(in srgb,var(--green) 45%,transparent);padding:9px 11px;border-radius:8px;margin:9px 0;font-size:var(--ff-type-small);text-align:center}
-.demo-code strong{letter-spacing:.18em}
 .phone-reset{display:block;margin:10px auto 0;background:transparent;color:var(--green);font-size:var(--ff-type-small);font-weight:700}
 .phone-reset:disabled{opacity:.55;cursor:not-allowed}
 .phone-reset-blocked{display:block;text-align:center;color:var(--muted);font-size:var(--ff-type-small);margin-top:8px;opacity:.85}

@@ -49,8 +49,7 @@ The application is built with **Next.js 16**, **React 19**, **Drizzle ORM**, and
 - Email/password authentication supports renter and company accounts with signed JWT sessions.
 - Renters can continue with Google or Facebook through OAuth 2.0 authorization-code callbacks.
 - Passwordless phone authentication sends a cryptographically generated six-digit, expiring verification code through the WhatsApp Cloud API.
-- Phone codes are bcrypt-hashed at rest, one-use, attempt-limited, and request-rate-limited. Phone numbers are normalized to international E.164 form and unique per account.
-- Local PGlite development exposes the generated demo code only when WhatsApp credentials and an external `DATABASE_URL` are both absent; configured production databases never expose codes in API responses.
+- Phone codes are bcrypt-hashed at rest, one-use, attempt-limited, and request-rate-limited. Phone numbers are normalized to international E.164 form and unique per account. Codes are delivered only through the WhatsApp Cloud API and are never returned in API responses.
 - Authentication return paths accept only same-origin relative destinations, preventing external redirect injection while preserving the renter’s intended booking.
 - Guest marketplace responses expose only customer-facing fields. Fleet identifiers and operational data such as VINs, license plates, odometers, fuel levels, insurance policy numbers, and internal promotion metadata remain private.
 
@@ -365,7 +364,7 @@ Set `APP_URL` to the exact public origin and register these callbacks with each 
 
 Public support is durable independently of the webhook: `POST /api/public-support` stores the validated request first and returns `201` with its reference. An optional webhook is attempted with a five-second timeout; non-success responses or delivery failures are logged without deleting the request or turning the accepted submission into an error. The receiver should calculate HMAC-SHA256 over the raw request body, compare it to `X-FleetFlow-Signature` using a timing-safe comparison, and reject stale or duplicate references according to its own policy. Do not expose the webhook URL or secret to browser code.
 
-In local PGlite development, if WhatsApp credentials are absent, the request endpoint returns a clearly labeled demo code for testing. When `DATABASE_URL` is configured, missing WhatsApp credentials produce an error instead of exposing the code. See `.env.example` for the complete template.
+Phone sign-in requires WhatsApp Cloud API credentials (`WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`); without them the request endpoint rejects with a "not configured" error, and codes are never returned in API responses. See `.env.example` for the complete template.
 
 For production:
 
