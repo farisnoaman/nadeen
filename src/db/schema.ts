@@ -125,6 +125,14 @@ export const paymentGatewaySettings = pgTable('payment_gateway_settings', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [uniqueIndex('payment_gateway_provider_idx').on(table.provider)]);
 
+export const platformSettings = pgTable('platform_settings', {
+  id: integer('id').primaryKey().default(1),
+  supportPhones: jsonb('support_phones').$type<{ label: string; phone: string }[]>().notNull().default([]),
+  supportEmail: text('support_email'),
+  updatedBy: integer('updated_by').references(() => users.id, { onDelete: 'set null' }),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
 export const platformPayments = pgTable('platform_payments', {
   id: serial('id').primaryKey(),
   companyId: integer('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
@@ -184,6 +192,7 @@ export const vehicles = pgTable('vehicles', {
   licensePlate: text('license_plate').notNull(),
   vin: text('vin').notNull().default(''),
   odometer: integer('odometer').notNull().default(0),
+  fuelConsumption: doublePrecision('fuel_consumption'),
   fuelLevel: integer('fuel_level').notNull().default(100),
   fuelPolicy: text('fuel_policy').$type<'same_to_same' | 'full_to_full' | 'prepaid'>().notNull().default('same_to_same'),
   dailyKilometerAllowance: integer('daily_kilometer_allowance').notNull().default(250),
@@ -246,6 +255,7 @@ export const promotions = pgTable('promotions', {
   enabled: boolean('enabled').notNull().default(true),
   minQuantity: integer('min_quantity').notNull().default(1),
   redemptions: integer('redemptions').notNull().default(0),
+  archivedAt: timestamp('archived_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [uniqueIndex('promotions_company_code_idx').on(table.companyId, table.code)]);
 

@@ -180,6 +180,14 @@ CREATE TABLE IF NOT EXISTS promotions (
   ends_at TIMESTAMPTZ NOT NULL, enabled BOOLEAN NOT NULL DEFAULT TRUE, min_quantity INTEGER NOT NULL DEFAULT 1,
   redemptions INTEGER NOT NULL DEFAULT 0, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), UNIQUE(company_id, code)
 );
+ALTER TABLE promotions ADD COLUMN IF NOT EXISTS archived_at TIMESTAMPTZ;
+ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS fuel_consumption DOUBLE PRECISION;
+CREATE TABLE IF NOT EXISTS platform_settings (
+  id INTEGER PRIMARY KEY DEFAULT 1, support_phones JSONB NOT NULL DEFAULT '[]'::jsonb,
+  support_email TEXT, updated_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+INSERT INTO platform_settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
 CREATE TABLE IF NOT EXISTS promotion_vehicles (
   promotion_id INTEGER NOT NULL REFERENCES promotions(id) ON DELETE CASCADE,
   vehicle_id INTEGER NOT NULL REFERENCES vehicles(id) ON DELETE CASCADE,
@@ -427,7 +435,7 @@ CREATE TABLE IF NOT EXISTS saved_vehicles (
 CREATE INDEX IF NOT EXISTS saved_vehicles_vehicle_idx ON saved_vehicles(vehicle_id);
 `;
 
-type Store = { promise?: Promise<any>; db?: any; raw?: any; imagesReady?: Promise<void> };
+type Store = { promise?: Promise<any>; db?: any; raw?: any; imagesReady?: Promise<void>; promoArchivedReady?: Promise<any>; platformSettingsReady?: Promise<any>; fuelConsumptionReady?: Promise<any> };
 const globalStore = globalThis as typeof globalThis & { __fleetflowDb?: Store };
 const store = globalStore.__fleetflowDb ||= {};
 
@@ -454,6 +462,19 @@ async function initialize() {
     ]);
     const directory = path.join(process.cwd(), 'data', 'fleetflow-pg');
     fs.mkdirSync(path.dirname(directory), { recursive: true });
+    // A crashed server leaves postmaster.pid behind; PGlite then aborts on startup.
+    // Remove the lock when its owner process no longer exists.
+    const pidFile = path.join(directory, 'postmaster.pid');
+    try {
+      if (fs.existsSync(pidFile)) {
+        const ownerPid = Number(String(fs.readFileSync(pidFile, 'utf8')).split('\n')[0]?.trim() || 0);
+        let stale = true;
+        if (ownerPid > 0) {
+          try { process.kill(ownerPid, 0); stale = false; } catch (error: any) { stale = error?.code === 'ESRCH'; }
+        }
+        if (stale) fs.rmSync(pidFile);
+      }
+    } catch { /* best effort — PGlite reports a live lock itself */ }
     const client = new PGlite(directory);
     await client.exec(ddl);
     db = drizzle(client, { schema });
@@ -490,9 +511,39 @@ export async function getDb() {
         : store.raw.exec(`ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS images JSONB NOT NULL DEFAULT '[]'::jsonb`);
     }
     if (store.imagesReady) await store.imagesReady;
+    if (store.raw && !store.promoArchivedReady) {
+      store.promoArchivedReady = process.env.DATABASE_URL
+        ? store.raw.unsafe(`ALTER TABLE promotions ADD COLUMN IF NOT EXISTS archived_at TIMESTAMPTZ`)
+        : store.raw.exec(`ALTER TABLE promotions ADD COLUMN IF NOT EXISTS archived_at TIMESTAMPTZ`);
+    }
+    if (store.promoArchivedReady) await store.promoArchivedReady;
+    if (store.raw && !store.fuelConsumptionReady) {
+      store.fuelConsumptionReady = process.env.DATABASE_URL
+        ? store.raw.unsafe(`ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS fuel_consumption DOUBLE PRECISION`)
+        : store.raw.exec(`ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS fuel_consumption DOUBLE PRECISION`);
+    }
+    if (store.fuelConsumptionReady) await store.fuelConsumptionReady;
+    if (store.raw && !store.platformSettingsReady) {
+      const ddl = `CREATE TABLE IF NOT EXISTS platform_settings (
+        id INTEGER PRIMARY KEY DEFAULT 1, support_phones JSONB NOT NULL DEFAULT '[]'::jsonb,
+        support_email TEXT, updated_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+      INSERT INTO platform_settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING;`;
+      store.platformSettingsReady = process.env.DATABASE_URL
+        ? store.raw.unsafe(ddl)
+        : store.raw.exec(ddl);
+    }
+    if (store.platformSettingsReady) await store.platformSettingsReady;
     return store.db;
   }
-  store.promise ||= initialize();
+  if (!store.promise) {
+    // A failed initialization must not poison every future request — reset and retry on the next call.
+    store.promise = initialize().catch((error: any) => {
+      store.promise = undefined;
+      throw error;
+    });
+  }
   return store.promise;
 }
 
