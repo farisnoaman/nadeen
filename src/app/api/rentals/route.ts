@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { and, desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { getDb } from '@/db';
 import { companies, insurancePackages, insurancePackageVehicles, maintenanceWorkOrders, notifications, premiumServices, promotionVehicles, promotions, rentals, rentalServices, users, vehicleConditionLogs, vehicles } from '@/db/schema';
 import { requireUser } from '@/lib/auth';
@@ -178,6 +178,7 @@ export async function POST(request: Request) {
       const [promo] = await db.select().from(promotions).where(and(
         eq(promotions.companyId, vehicle.companyId),
         eq(promotions.code, String(rawCode).toUpperCase()),
+        isNull(promotions.archivedAt),
       )).limit(1);
       if (!promo || promotionState(promo) !== 'live' || quantity < promo.minQuantity) {
         throw new Error('This promotion is not valid for this booking.');

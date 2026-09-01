@@ -1,4 +1,4 @@
-import { and, eq, gte, inArray, lte, or } from 'drizzle-orm';
+import { and, eq, gte, inArray, isNull, lte, or } from 'drizzle-orm';
 import { getDb } from '@/db';
 import {
   companies,
@@ -178,7 +178,7 @@ export async function GET(request: Request) {
       user.role === 'company' ? db.select().from(kilometerPolicies)
         .where(eq(kilometerPolicies.companyId, companyId)) : Promise.resolve([]),
       db.select({ promotion: promotions, companyName: companies.name }).from(promotions)
-        .innerJoin(companies, eq(promotions.companyId, companies.id)).where(promotionAccess),
+        .innerJoin(companies, eq(promotions.companyId, companies.id)).where(and(promotionAccess, isNull(promotions.archivedAt))),
       db.select({ service: premiumServices, companyName: companies.name }).from(premiumServices)
         .innerJoin(companies, eq(premiumServices.companyId, companies.id)).where(serviceAccess),
       db.select({ ticket: supportTickets, requesterName: users.name, requesterEmail: users.email, companyName: companies.name })

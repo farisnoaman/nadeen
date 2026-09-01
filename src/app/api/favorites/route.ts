@@ -1,4 +1,4 @@
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, isNull } from 'drizzle-orm';
 import { getDb } from '@/db';
 import { companies, promotionVehicles, promotions, savedVehicles, vehicles } from '@/db/schema';
 import { requireUser } from '@/lib/auth';
@@ -19,7 +19,7 @@ export async function GET() {
       .where(eq(savedVehicles.userId, user.id))
       .orderBy(desc(savedVehicles.createdAt));
     const companyIds = [...new Set(rows.map((row: any) => row.vehicle.companyId))];
-    const promoRows = companyIds.length ? await db.select().from(promotions) : [];
+    const promoRows = companyIds.length ? await db.select().from(promotions).where(isNull(promotions.archivedAt)) : [];
     const links = companyIds.length ? await db.select().from(promotionVehicles) : [];
     const result = rows.map((row: any) => {
       const vehicle = row.vehicle;
