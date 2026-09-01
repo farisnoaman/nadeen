@@ -11,8 +11,8 @@ export const metadata:Metadata={
   description:'Rent cars by the hour, day, week, or month from verified rental companies. Live availability, transparent pricing, protected bookings, and full Arabic/English support.',
   keywords:['car rental','rent a car','hourly car rental','weekly car rental','car sharing','FleetFlow','تأجير السيارات','كراء السيارات'],
   alternates:{canonical:'/',languages:{ar:'/',en:'/'}},
-  openGraph:{type:'website',siteName:'FleetFlow',url:'/',locale:'ar_SA',alternateLocale:['en_US'],title:'FleetFlow — Move freely',description:'Rent cars by the hour, day, week, or month from verified rental companies.'},
-  twitter:{card:'summary_large_image',title:'FleetFlow — Move freely',description:'Rent cars by the hour, day, week, or month from verified rental companies.'},
+  openGraph:{type:'website',siteName:'FleetFlow',url:'/',locale:'ar_SA',alternateLocale:['en_US'],title:'FleetFlow — Move freely',description:'Rent cars by the hour, day, week, or month from verified rental companies.',images:[{url:'/cars/mercedes.jpg',width:1200,height:630,alt:'FleetFlow car rental'}]},
+  twitter:{card:'summary_large_image',title:'FleetFlow — Move freely',description:'Rent cars by the hour, day, week, or month from verified rental companies.',images:['/cars/mercedes.jpg']},
   robots:{index:true,follow:true,googleBot:{index:true,follow:true,'max-image-preview':'large','max-snippet':-1}},
 };
 export const viewport:Viewport={width:'device-width',initialScale:1,maximumScale:5,viewportFit:'cover',themeColor:[{media:'(prefers-color-scheme: light)',color:'#f5f6f2'},{media:'(prefers-color-scheme: dark)',color:'#111714'}]};
