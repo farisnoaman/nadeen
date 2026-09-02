@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from 'next';
 import { cookies } from 'next/headers';
 import { Providers } from '@/components/providers';
+import { PwaRegister } from '@/components/pwa-register';
+import { PwaInstallBanner } from '@/components/pwa-install-banner';
 import { WhatsAppFloat, WhatsAppProvider } from '@/components/whatsapp-float';
 import './globals.css';
 
@@ -24,5 +26,5 @@ export default async function RootLayout({children}:{children:React.ReactNode}){
     {'@type':'WebSite',name:'FleetFlow',url:siteUrl,inLanguage:lang,potentialAction:{'@type':'SearchAction',target:`${siteUrl}/browse?search={search_term_string}`,'query-input':'required name=search_term_string'}},
     {'@type':'Organization',name:'FleetFlow',url:siteUrl,logo:`${siteUrl}/icon.svg`,description:'Flexible car rental marketplace and fleet management platform'},
   ]};
-  return <html lang={lang} dir={lang==='ar'?'rtl':'ltr'} data-scroll-behavior="smooth" className={theme==='dark'?'dark':undefined} style={{colorScheme:theme}} suppressHydrationWarning><body><script type="application/ld+json" dangerouslySetInnerHTML={{__html:JSON.stringify(jsonLd).replace(/</g,'\\u003c')}} /><Providers lang={lang} theme={theme}><WhatsAppProvider><a href="#main-content" className="skip-link">{lang==='ar'?'الانتقال إلى المحتوى':'Skip to content'}</a><div id="main-content">{children}</div><WhatsAppFloat /></WhatsAppProvider></Providers></body></html>;
+  return <html lang={lang} dir={lang==='ar'?'rtl':'ltr'} data-scroll-behavior="smooth" className={theme==='dark'?'dark':undefined} style={{colorScheme:theme}} suppressHydrationWarning><body><script type="application/ld+json" dangerouslySetInnerHTML={{__html:JSON.stringify(jsonLd).replace(/</g,'\\u003c')}} /><Providers lang={lang} theme={theme}><PwaRegister /><WhatsAppProvider><a href="#main-content" className="skip-link">{lang==='ar'?'الانتقال إلى المحتوى':'Skip to content'}</a><div id="main-content">{children}</div><WhatsAppFloat /></WhatsAppProvider><PwaInstallBanner /></Providers></body></html>;
 }
