@@ -41,7 +41,7 @@ export function AuthForm({mode}:{mode:'login'|'register'}){
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState(search.get('authError') || '');
   const [phone,setPhone]=useState('');
-  const [dialCode,setDialCode]=useState('966');
+  const [dialCode,setDialCode]=useState('967');
   const [code,setCode]=useState('');
   const [codeSent,setCodeSent]=useState(false);
 const [requestTimes,setRequestTimes]=useState<number[]>([]);
